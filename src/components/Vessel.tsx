@@ -60,14 +60,13 @@ export function Vessel({
           aria-label={`Vessel filled to ${Math.round(fill * 100)} percent of Maximum Target`}
         >
           <div
-            className="absolute inset-x-0 bottom-0 bg-[var(--water-fill)] opacity-80 transition-[height] ease-linear"
+            className="absolute inset-x-0 bottom-0 z-0 bg-[var(--water-fill)] opacity-80 transition-[height] ease-linear"
             style={{
               height: `${fill * 100}%`,
               transitionDuration: `${FILL_TRANSITION_MS}ms`,
-              boxShadow:
-                '0 -0.08rem 0 0.08rem rgba(255,255,255,0.45) inset, 0 0 0.75rem 0.5rem rgba(255,255,255,0.28) inset',
             }}
           />
+          <div className="vessel-shell__glow" aria-hidden />
 
           {marks
             .filter((mark) => mark < settings.maximumTarget)
