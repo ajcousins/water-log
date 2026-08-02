@@ -13,7 +13,7 @@
   --glass: rgba(255, 255, 255, 0.55);
   --glass-edge: rgba(14, 90, 117, 0.18);
   --bg-below: linear-gradient(165deg, #e8f4fa 0%, #c5e0ec 45%, #a8d0e0 100%);
-  --bg-met: linear-gradient(165deg, #fff9e9 0%, #f5e4b0 45%, #e8c96a 100%);
+  --bg-met: linear-gradient(165deg, #fff9e9 0%, #ffbafd 45%, #97fff8 100%);
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--ink);
   background-color: #d7eaf2;
