@@ -68,3 +68,26 @@ body[data-goal-met='true']::after {
 button {
   font: inherit;
 }
+
+/* Bubble-inspired 3D glass shading on the vessel shell (shape unchanged) */
+.vessel-shell {
+  box-shadow:
+    0 -0.1rem 0 0.1rem rgba(255, 255, 255, 0.65) inset,
+    0 0 0 0.1rem rgba(126, 200, 227, 0.55) inset,
+    0 0 1rem 0.75rem rgba(91, 184, 217, 0.4) inset,
+    0 0.5rem 1.25rem rgba(12, 42, 58, 0.12);
+}
+
+.vessel-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    42% 14% at 50% 6%,
+    rgba(255, 255, 255, 0.65) 42%,
+    rgba(255, 255, 255, 0) 58%
+  );
+}

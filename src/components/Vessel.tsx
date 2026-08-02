@@ -55,16 +55,17 @@ export function Vessel({
 
       <div className="relative w-full">
         <div
-          className="relative h-[22rem] w-full overflow-hidden rounded-[2rem] border border-[var(--glass-edge)] bg-[var(--glass)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.4)] backdrop-blur-sm"
+          className="vessel-shell relative h-[22rem] w-full overflow-hidden rounded-[2rem] border border-[var(--glass-edge)] bg-[var(--glass)] backdrop-blur-sm"
           role="img"
           aria-label={`Vessel filled to ${Math.round(fill * 100)} percent of Maximum Target`}
         >
           <div
-            className="absolute inset-x-0 bottom-0 bg-[var(--water-fill)] transition-[height] ease-linear"
+            className="absolute inset-x-0 bottom-0 bg-[var(--water-fill)] opacity-80 transition-[height] ease-linear"
             style={{
               height: `${fill * 100}%`,
               transitionDuration: `${FILL_TRANSITION_MS}ms`,
-              boxShadow: 'inset 0 8px 18px rgba(255,255,255,0.35)',
+              boxShadow:
+                '0 -0.08rem 0 0.08rem rgba(255,255,255,0.45) inset, 0 0 0.75rem 0.5rem rgba(255,255,255,0.28) inset',
             }}
           />
 
@@ -75,13 +76,12 @@ export function Vessel({
               return (
                 <div
                   key={mark}
-                  className="pointer-events-none absolute inset-x-0 h-0"
+                  className="pointer-events-none absolute inset-x-0 z-[3] h-0"
                   style={{ top }}
                 >
-                  {/* Center the tick on the percentage so label height does not push the line down */}
-                  <div className="flex -translate-y-1/2 items-center">
-                    <div className="h-px flex-1 bg-[var(--pool)]/25" />
-                    <span className="w-10 pr-2 text-right text-[0.65rem] leading-none text-[var(--ink-muted)]">
+                  <div className="flex -translate-y-1/2 items-center justify-end">
+                    <div className="h-px w-[10%] bg-[var(--ink)]" />
+                    <span className="w-10 pr-2 text-right text-[0.65rem] leading-none text-[var(--ink)]">
                       {mark}
                     </span>
                   </div>
@@ -90,7 +90,7 @@ export function Vessel({
             })}
 
           <div
-            className="pointer-events-none absolute right-0 left-0 border-t border-dashed border-[var(--pool-deep)]/70"
+            className="pointer-events-none absolute right-0 left-0 z-[3] border-t border-dashed border-[var(--pool-deep)]/70"
             style={{ top: minTop }}
           >
             <span className="absolute top-1 left-2 text-[0.65rem] font-semibold tracking-wide text-[var(--pool-deep)] uppercase">
