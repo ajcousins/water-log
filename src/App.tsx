@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MainScreen } from './components/MainScreen'
 import { SettingsScreen } from './components/SettingsScreen'
 import { useWaterLog } from './useWaterLog'
@@ -8,6 +8,10 @@ type Screen = 'main' | 'settings'
 export default function App() {
   const [screen, setScreen] = useState<Screen>('main')
   const log = useWaterLog()
+
+  useEffect(() => {
+    document.body.dataset.goalMet = log.goalMet ? 'true' : 'false'
+  }, [log.goalMet])
 
   if (screen === 'settings') {
     return (

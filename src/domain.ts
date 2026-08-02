@@ -32,6 +32,60 @@ export function shouldFireFireworks(
   return previous < minimumTarget && next >= minimumTarget
 }
 
+/** Duration of the Vessel fill height transition; keep in sync with Vessel CSS. */
+export const FILL_TRANSITION_MS = 700
+
+/**
+ * Delay until a linear fill animation from previous→next would reach the Minimum Target line.
+ * Works for crossing upward or downward. Returns null when the fill does not cross the line.
+ */
+export function fillThresholdCrossingDelayMs(
+  previous: number,
+  next: number,
+  minimumTarget: number,
+  maximumTarget: number,
+  durationMs: number = FILL_TRANSITION_MS,
+): number | null {
+  const crossedUp = previous < minimumTarget && next >= minimumTarget
+  const crossedDown = previous >= minimumTarget && next < minimumTarget
+  if (!crossedUp && !crossedDown) return null
+
+  const from = vesselFillRatio(previous, maximumTarget)
+  const to = vesselFillRatio(next, maximumTarget)
+  if (from === to) return 0
+
+  const cross =
+    maximumTarget <= 0
+      ? 0
+      : Math.min(1, Math.max(0, minimumTarget / maximumTarget))
+  const progress = (cross - from) / (to - from)
+  if (progress < 0 || progress > 1) return 0
+  return Math.round(progress * durationMs)
+}
+
+/**
+ * Delay until a linear fill animation from previous→next would reach the Minimum Target.
+ * Returns 0 when fireworks should not fire.
+ */
+export function fillCrossingDelayMs(
+  previous: number,
+  next: number,
+  minimumTarget: number,
+  maximumTarget: number,
+  durationMs: number = FILL_TRANSITION_MS,
+): number {
+  if (!shouldFireFireworks(previous, next, minimumTarget)) return 0
+  return (
+    fillThresholdCrossingDelayMs(
+      previous,
+      next,
+      minimumTarget,
+      maximumTarget,
+      durationMs,
+    ) ?? 0
+  )
+}
+
 export function validateSettings(settings: Settings): SettingsValidation {
   if (settings.minimumTarget >= settings.maximumTarget) {
     return {

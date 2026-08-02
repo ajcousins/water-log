@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addToDailyTotal,
+  fillCrossingDelayMs,
+  fillThresholdCrossingDelayMs,
   formatDayLabel,
   isToday,
   removeFromDailyTotal,
@@ -26,25 +28,85 @@ export function useWaterLog(storage: Storage = localStorage) {
   const [dailyTotal, setDailyTotal] = useState(() =>
     loadDailyTotal(storage, toDayKey(new Date())),
   )
+  const [goalMet, setGoalMet] = useState(
+    () =>
+      loadDailyTotal(storage, toDayKey(new Date())) >=
+      loadSettings(storage).minimumTarget,
+  )
   const [fireworksToken, setFireworksToken] = useState(0)
+  const fireworksTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const goalMetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const dayKey = useMemo(() => toDayKey(selectedDay), [selectedDay])
   const viewingToday = isToday(selectedDay)
 
   useEffect(() => {
-    setDailyTotal(loadDailyTotal(storage, dayKey))
-  }, [dayKey, storage])
+    const total = loadDailyTotal(storage, dayKey)
+    setDailyTotal(total)
+    if (goalMetTimeoutRef.current !== null) {
+      clearTimeout(goalMetTimeoutRef.current)
+      goalMetTimeoutRef.current = null
+    }
+    setGoalMet(total >= settings.minimumTarget)
+  }, [dayKey, storage, settings.minimumTarget])
+
+  useEffect(() => {
+    return () => {
+      if (fireworksTimeoutRef.current !== null) {
+        clearTimeout(fireworksTimeoutRef.current)
+      }
+      if (goalMetTimeoutRef.current !== null) {
+        clearTimeout(goalMetTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const applyTotal = useCallback(
     (next: number) => {
       const previous = dailyTotal
       setDailyTotal(next)
       saveDailyTotal(storage, dayKey, next)
+
+      const crossingDelay = fillThresholdCrossingDelayMs(
+        previous,
+        next,
+        settings.minimumTarget,
+        settings.maximumTarget,
+      )
+      if (crossingDelay !== null) {
+        if (goalMetTimeoutRef.current !== null) {
+          clearTimeout(goalMetTimeoutRef.current)
+        }
+        const met = next >= settings.minimumTarget
+        goalMetTimeoutRef.current = setTimeout(() => {
+          goalMetTimeoutRef.current = null
+          setGoalMet(met)
+        }, crossingDelay)
+      }
+
       if (shouldFireFireworks(previous, next, settings.minimumTarget)) {
-        setFireworksToken((token) => token + 1)
+        if (fireworksTimeoutRef.current !== null) {
+          clearTimeout(fireworksTimeoutRef.current)
+        }
+        const delay = fillCrossingDelayMs(
+          previous,
+          next,
+          settings.minimumTarget,
+          settings.maximumTarget,
+        )
+        fireworksTimeoutRef.current = setTimeout(() => {
+          fireworksTimeoutRef.current = null
+          setFireworksToken((token) => token + 1)
+        }, delay)
       }
     },
-    [dailyTotal, dayKey, settings.minimumTarget, storage],
+    [
+      dailyTotal,
+      dayKey,
+      settings.maximumTarget,
+      settings.minimumTarget,
+      storage,
+    ],
   )
 
   const addAmount = useCallback(
@@ -78,9 +140,10 @@ export function useWaterLog(storage: Storage = localStorage) {
       if (!result.ok) return result
       setSettings(next)
       saveSettings(storage, next)
+      setGoalMet(dailyTotal >= next.minimumTarget)
       return result
     },
-    [storage],
+    [dailyTotal, storage],
   )
 
   return {
@@ -88,6 +151,7 @@ export function useWaterLog(storage: Storage = localStorage) {
     selectedDay,
     dayLabel: formatDayLabel(selectedDay),
     dailyTotal,
+    goalMet,
     viewingToday,
     fireworksToken,
     addAmount,

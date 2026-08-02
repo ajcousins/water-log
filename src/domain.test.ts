@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_SETTINGS,
+  FILL_TRANSITION_MS,
   addToDailyTotal,
   exceedsMaximumTarget,
+  fillCrossingDelayMs,
+  fillThresholdCrossingDelayMs,
   formatDayLabel,
   isToday,
   removeFromDailyTotal,
@@ -47,6 +50,47 @@ describe('Fireworks', () => {
 
   it('does not fire when staying below the Minimum Target', () => {
     expect(shouldFireFireworks(1000, 1400, 1500)).toBe(false)
+  })
+})
+
+describe('fillCrossingDelayMs', () => {
+  it('returns 0 when the total does not cross the Minimum Target', () => {
+    expect(fillCrossingDelayMs(1000, 1400, 1500, 2500)).toBe(0)
+  })
+
+  it('returns about half the duration for a midway cross', () => {
+    // from 1000→2000 with min 1500 on max 2500: ratios 0.4→0.8, cross 0.6 → 50%
+    expect(fillCrossingDelayMs(1000, 2000, 1500, 2500)).toBe(
+      Math.round(0.5 * FILL_TRANSITION_MS),
+    )
+  })
+
+  it('returns a small delay when starting near the Minimum Target', () => {
+    // from 1480→2000, min 1500, max 2500: ~3.8% of duration
+    expect(fillCrossingDelayMs(1480, 2000, 1500, 2500)).toBe(
+      Math.round(((0.6 - 1480 / 2500) / (2000 / 2500 - 1480 / 2500)) * FILL_TRANSITION_MS),
+    )
+  })
+
+  it('returns delay at the Minimum Target ratio when filling from empty to full', () => {
+    // from 0→2500, min 1500: cross at 0.6 → 60% of duration
+    expect(fillCrossingDelayMs(0, 2500, 1500, 2500)).toBe(
+      Math.round(0.6 * FILL_TRANSITION_MS),
+    )
+  })
+})
+
+describe('fillThresholdCrossingDelayMs', () => {
+  it('returns delay when dropping below the Minimum Target', () => {
+    // from 2000→1000, min 1500, max 2500: 0.8→0.4, cross 0.6 → 50%
+    expect(fillThresholdCrossingDelayMs(2000, 1000, 1500, 2500)).toBe(
+      Math.round(0.5 * FILL_TRANSITION_MS),
+    )
+  })
+
+  it('returns null when staying on the same side of the Minimum Target', () => {
+    expect(fillThresholdCrossingDelayMs(1000, 1400, 1500, 2500)).toBeNull()
+    expect(fillThresholdCrossingDelayMs(1600, 2000, 1500, 2500)).toBeNull()
   })
 })
 

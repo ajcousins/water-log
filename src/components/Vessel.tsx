@@ -1,4 +1,5 @@
 import {
+  FILL_TRANSITION_MS,
   exceedsMaximumTarget,
   vesselFillRatio,
   vesselMarkAmounts,
@@ -36,9 +37,10 @@ export function Vessel({ dailyTotal, settings }: VesselProps) {
         aria-label={`Vessel filled to ${Math.round(fill * 100)} percent of Maximum Target`}
       >
         <div
-          className="absolute inset-x-0 bottom-0 bg-[var(--water-fill)] transition-[height] duration-700 ease-out"
+          className="absolute inset-x-0 bottom-0 bg-[var(--water-fill)] transition-[height] ease-linear"
           style={{
             height: `${fill * 100}%`,
+            transitionDuration: `${FILL_TRANSITION_MS}ms`,
             boxShadow: 'inset 0 8px 18px rgba(255,255,255,0.35)',
           }}
         />
