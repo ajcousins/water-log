@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { HiOutlineCog6Tooth } from 'react-icons/hi2'
 import type { Settings } from '../domain'
 import { CustomModal } from './CustomModal'
 import { Fireworks } from './Fireworks'
@@ -37,14 +38,14 @@ export function MainScreen({
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-8 pt-5">
       <Fireworks token={fireworksToken} />
 
-      <header className="mb-4 grid grid-cols-[auto_1fr_auto] items-center gap-2">
+      <header className="relative mb-4 flex h-11 items-center justify-center">
         <button
           type="button"
           onClick={onOpenSettings}
-          className="justify-self-start rounded-full border border-[var(--glass-edge)] bg-white/60 px-3 py-2 text-sm text-[var(--pool-deep)] shadow-sm backdrop-blur"
+          className="absolute left-0 rounded-full border border-[var(--glass-edge)] bg-white/60 p-2.5 text-[var(--pool-deep)] shadow-sm backdrop-blur"
           aria-label="Settings"
         >
-          Settings
+          <HiOutlineCog6Tooth className="h-5 w-5" aria-hidden />
         </button>
 
         <div className="flex items-center justify-center gap-2">
@@ -69,8 +70,6 @@ export function MainScreen({
             ▶
           </button>
         </div>
-
-        <span className="w-[4.5rem]" aria-hidden />
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center py-4">
