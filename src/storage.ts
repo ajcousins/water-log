@@ -2,8 +2,10 @@ import { DEFAULT_SETTINGS, type Settings } from './domain'
 
 const SETTINGS_KEY = 'water-log:settings'
 const TOTALS_KEY = 'water-log:totals'
+const UPDATED_AT_KEY = 'water-log:updated-at'
 
 type TotalsMap = Record<string, number>
+type UpdatedAtMap = Record<string, number>
 
 export function loadSettings(storage: Storage): Settings {
   const raw = storage.getItem(SETTINGS_KEY)
@@ -49,4 +51,33 @@ export function saveDailyTotal(
   const totals = loadTotals(storage)
   totals[dayKey] = total
   storage.setItem(TOTALS_KEY, JSON.stringify(totals))
+}
+
+function loadUpdatedAtMap(storage: Storage): UpdatedAtMap {
+  const raw = storage.getItem(UPDATED_AT_KEY)
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw) as UpdatedAtMap
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+export function loadLastUpdated(
+  storage: Storage,
+  dayKey: string,
+): number | null {
+  const value = loadUpdatedAtMap(storage)[dayKey]
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+export function saveLastUpdated(
+  storage: Storage,
+  dayKey: string,
+  at: number,
+): void {
+  const map = loadUpdatedAtMap(storage)
+  map[dayKey] = at
+  storage.setItem(UPDATED_AT_KEY, JSON.stringify(map))
 }

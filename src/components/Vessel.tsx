@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import {
   FILL_TRANSITION_MS,
   exceedsMaximumTarget,
+  formatLastUpdatedLabel,
   vesselFillRatio,
   vesselMarkAmounts,
   type Settings,
@@ -9,9 +11,11 @@ import {
 type VesselProps = {
   dailyTotal: number
   settings: Settings
+  lastUpdated: number | null
 }
 
-export function Vessel({ dailyTotal, settings }: VesselProps) {
+export function Vessel({ dailyTotal, settings, lastUpdated }: VesselProps) {
+  const [now, setNow] = useState(() => Date.now())
   const fill = vesselFillRatio(dailyTotal, settings.maximumTarget)
   const marks = vesselMarkAmounts(settings.maximumTarget)
   const over = exceedsMaximumTarget(dailyTotal, settings.maximumTarget)
@@ -19,17 +23,35 @@ export function Vessel({ dailyTotal, settings }: VesselProps) {
     settings.maximumTarget > 0
       ? `${(1 - settings.minimumTarget / settings.maximumTarget) * 100}%`
       : '0%'
+  const lastUpdatedLabel = formatLastUpdatedLabel(lastUpdated, now)
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 30_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    setNow(Date.now())
+  }, [lastUpdated])
 
   return (
     <div className="flex w-full max-w-[11.5rem] flex-col items-center gap-3">
-      <p
-        className="font-[Fraunces,serif] text-3xl tabular-nums tracking-tight"
-        style={{ color: over ? 'var(--over)' : 'var(--ink)' }}
-        aria-live="polite"
-      >
-        {dailyTotal}
-        <span className="ml-1 text-base font-medium opacity-70">ml</span>
-      </p>
+      <div className="flex flex-col items-center gap-1">
+        <p
+          className="font-[Fraunces,serif] text-3xl tabular-nums tracking-tight"
+          style={{ color: over ? 'var(--over)' : 'var(--ink)' }}
+          aria-live="polite"
+        >
+          {dailyTotal}
+          <span className="ml-1 text-base font-medium opacity-70">ml</span>
+        </p>
+        <p
+          className="min-h-[1rem] text-center text-xs text-[var(--ink-muted)]"
+          aria-live="polite"
+        >
+          {lastUpdatedLabel}
+        </p>
+      </div>
 
       <div
         className="relative h-[22rem] w-full overflow-hidden rounded-[2rem] border border-[var(--glass-edge)] bg-[var(--glass)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.4)] backdrop-blur-sm"

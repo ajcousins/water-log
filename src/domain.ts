@@ -156,3 +156,27 @@ export function shiftDay(date: Date, delta: number): Date {
 export function isToday(date: Date, now: Date = new Date()): boolean {
   return toDayKey(date) === toDayKey(now)
 }
+
+const MINUTE_MS = 60_000
+const HOUR_MS = 60 * MINUTE_MS
+
+/** Relative “Updated …” label; returns a single space when there is no timestamp. */
+export function formatLastUpdatedLabel(
+  updatedAt: number | null,
+  now: number,
+): string {
+  if (updatedAt === null) return ' '
+
+  const elapsed = Math.max(0, now - updatedAt)
+  if (elapsed < MINUTE_MS) return 'Updated just now'
+
+  const minutes = Math.floor(elapsed / MINUTE_MS)
+  if (minutes < 60) {
+    return minutes === 1
+      ? 'Updated 1 minute ago'
+      : `Updated ${minutes} minutes ago`
+  }
+
+  const hours = Math.floor(elapsed / HOUR_MS)
+  return hours === 1 ? 'Updated 1 hour ago' : `Updated ${hours} hours ago`
+}

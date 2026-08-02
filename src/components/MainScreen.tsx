@@ -8,6 +8,7 @@ type MainScreenProps = {
   dayLabel: string
   viewingToday: boolean
   dailyTotal: number
+  lastUpdated: number | null
   settings: Settings
   fireworksToken: number
   onBackDay: () => void
@@ -21,6 +22,7 @@ export function MainScreen({
   dayLabel,
   viewingToday,
   dailyTotal,
+  lastUpdated,
   settings,
   fireworksToken,
   onBackDay,
@@ -72,10 +74,11 @@ export function MainScreen({
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center py-4">
-        <p className="mb-6 font-[Fraunces,serif] text-4xl tracking-tight text-[var(--pool-deep)]">
-          Water Log
-        </p>
-        <Vessel dailyTotal={dailyTotal} settings={settings} />
+        <Vessel
+          dailyTotal={dailyTotal}
+          settings={settings}
+          lastUpdated={lastUpdated}
+        />
       </main>
 
       <footer className="mt-4 flex items-center justify-center gap-5">

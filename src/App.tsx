@@ -28,6 +28,7 @@ export default function App() {
       dayLabel={log.dayLabel}
       viewingToday={log.viewingToday}
       dailyTotal={log.dailyTotal}
+      lastUpdated={log.lastUpdated}
       settings={log.settings}
       fireworksToken={log.fireworksToken}
       onBackDay={log.goBack}

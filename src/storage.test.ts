@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from './domain'
 import {
   loadDailyTotal,
+  loadLastUpdated,
   loadSettings,
   saveDailyTotal,
+  saveLastUpdated,
   saveSettings,
 } from './storage'
 
@@ -56,5 +58,16 @@ describe('persistence', () => {
     saveDailyTotal(storage, '2026-07-30', 900)
     expect(loadDailyTotal(storage, '2026-07-30')).toBe(900)
     expect(loadDailyTotal(storage, '2026-07-29')).toBe(0)
+  })
+
+  it('treats a missing last-updated as null', () => {
+    expect(loadLastUpdated(memoryStorage(), '2026-07-30')).toBeNull()
+  })
+
+  it('round-trips a last-updated timestamp for a Day', () => {
+    const storage = memoryStorage()
+    saveLastUpdated(storage, '2026-07-30', 1_722_000_000_000)
+    expect(loadLastUpdated(storage, '2026-07-30')).toBe(1_722_000_000_000)
+    expect(loadLastUpdated(storage, '2026-07-29')).toBeNull()
   })
 })

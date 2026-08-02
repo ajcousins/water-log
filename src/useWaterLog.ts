@@ -14,8 +14,10 @@ import {
 } from './domain'
 import {
   loadDailyTotal,
+  loadLastUpdated,
   loadSettings,
   saveDailyTotal,
+  saveLastUpdated,
   saveSettings,
 } from './storage'
 
@@ -27,6 +29,9 @@ export function useWaterLog(storage: Storage = localStorage) {
   })
   const [dailyTotal, setDailyTotal] = useState(() =>
     loadDailyTotal(storage, toDayKey(new Date())),
+  )
+  const [lastUpdated, setLastUpdated] = useState<number | null>(() =>
+    loadLastUpdated(storage, toDayKey(new Date())),
   )
   const [goalMet, setGoalMet] = useState(
     () =>
@@ -43,6 +48,7 @@ export function useWaterLog(storage: Storage = localStorage) {
   useEffect(() => {
     const total = loadDailyTotal(storage, dayKey)
     setDailyTotal(total)
+    setLastUpdated(loadLastUpdated(storage, dayKey))
     if (goalMetTimeoutRef.current !== null) {
       clearTimeout(goalMetTimeoutRef.current)
       goalMetTimeoutRef.current = null
@@ -64,8 +70,11 @@ export function useWaterLog(storage: Storage = localStorage) {
   const applyTotal = useCallback(
     (next: number) => {
       const previous = dailyTotal
+      const updatedAt = Date.now()
       setDailyTotal(next)
       saveDailyTotal(storage, dayKey, next)
+      setLastUpdated(updatedAt)
+      saveLastUpdated(storage, dayKey, updatedAt)
 
       const crossingDelay = fillThresholdCrossingDelayMs(
         previous,
@@ -151,6 +160,7 @@ export function useWaterLog(storage: Storage = localStorage) {
     selectedDay,
     dayLabel: formatDayLabel(selectedDay),
     dailyTotal,
+    lastUpdated,
     goalMet,
     viewingToday,
     fireworksToken,
