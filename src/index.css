@@ -12,8 +12,11 @@
   --over: #c23b3b;
   --glass: rgba(255, 255, 255, 0.55);
   --glass-edge: rgba(14, 90, 117, 0.18);
-  --bg-below: linear-gradient(165deg, #e8f4fa 0%, #c5e0ec 45%, #a8d0e0 100%);
-  --bg-met: linear-gradient(165deg, #fff9e9 0%, #ffbafd 45%, #97fff8 100%);
+  --bg-too-low: linear-gradient(165deg, #e8f4fa 0%, #ede496 45%, #dac06e 100%);
+  --bg-low: linear-gradient(165deg, #e8f4fa 0%, #ece8c5 45%, #e0d8a8 100%);
+  --bg-good: linear-gradient(165deg, #e8f4fa 0%, #fffcdc 45%, #ffffff 100%);
+  --bg-met: linear-gradient(165deg, #a8d0e0 0%, #c5e0ec 45%, #e8f4fa 100%);
+  --bg-transition: 0.7s linear;
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--ink);
   background-color: #d7eaf2;
@@ -35,28 +38,55 @@ body,
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(ellipse 120% 80% at 50% -10%, #ffffff 0%, transparent 55%),
-    var(--bg-below);
-  background-attachment: fixed;
 }
 
-/* Sit above body's blue base, below #root — z-index: -1 was hidden behind the body background */
-body::after {
-  content: '';
+/* Crossfade status gradients — background-image itself cannot transition */
+.level-bgs {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    radial-gradient(ellipse 120% 80% at 50% -10%, #ffffff 0%, transparent 55%),
-    var(--bg-met);
-  background-attachment: fixed;
-  opacity: 0;
-  transition: opacity 0.7s linear;
 }
 
-body[data-goal-met='true']::after {
+.level-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--bg-transition);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.level-bg[data-status='very-low'] {
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -10%, #ffffff 0%, transparent 55%),
+    var(--bg-too-low);
+}
+
+.level-bg[data-status='low'] {
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -10%, #ffffff 0%, transparent 55%),
+    var(--bg-low);
+}
+
+.level-bg[data-status='good'] {
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -10%, #ffffff 0%, transparent 55%),
+    var(--bg-good);
+}
+
+.level-bg[data-status='met'] {
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -10%, #ffffff 0%, transparent 55%),
+    var(--bg-met);
+}
+
+body:not([data-level-status]) .level-bg[data-status='good'],
+body[data-level-status='good'] .level-bg[data-status='good'],
+body[data-level-status='met'] .level-bg[data-status='met'],
+body[data-level-status='low'] .level-bg[data-status='low'],
+body[data-level-status='very-low'] .level-bg[data-status='very-low'] {
   opacity: 1;
 }
 

@@ -12,6 +12,7 @@ import {
   type Settings,
   validateSettings,
 } from './domain'
+import { getLevelStatus, type LevelStatus } from './helpers/levels'
 import {
   loadDailyTotal,
   loadLastUpdated,
@@ -40,13 +41,17 @@ export function useWaterLog(storage: Storage = localStorage) {
   const [minMetAt, setMinMetAt] = useState<number | null>(() =>
     loadMinMetAt(storage, todayKey),
   )
-  const [goalMet, setGoalMet] = useState(
-    () =>
-      loadDailyTotal(storage, todayKey) >= loadSettings(storage).minimumTarget,
+  const [levelStatus, setLevelStatus] = useState<LevelStatus>(() =>
+    getLevelStatus(
+      loadDailyTotal(storage, todayKey),
+      loadSettings(storage).minimumTarget,
+    ),
   )
   const [fireworksToken, setFireworksToken] = useState(0)
   const fireworksTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const goalMetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const levelStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
   const minMetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const dayKey = useMemo(() => toDayKey(selectedDay), [selectedDay])
@@ -57,15 +62,15 @@ export function useWaterLog(storage: Storage = localStorage) {
     setDailyTotal(total)
     setLastUpdated(loadLastUpdated(storage, dayKey))
     setMinMetAt(loadMinMetAt(storage, dayKey))
-    if (goalMetTimeoutRef.current !== null) {
-      clearTimeout(goalMetTimeoutRef.current)
-      goalMetTimeoutRef.current = null
+    if (levelStatusTimeoutRef.current !== null) {
+      clearTimeout(levelStatusTimeoutRef.current)
+      levelStatusTimeoutRef.current = null
     }
     if (minMetTimeoutRef.current !== null) {
       clearTimeout(minMetTimeoutRef.current)
       minMetTimeoutRef.current = null
     }
-    setGoalMet(total >= settings.minimumTarget)
+    setLevelStatus(getLevelStatus(total, settings.minimumTarget))
   }, [dayKey, storage, settings.minimumTarget])
 
   useEffect(() => {
@@ -73,8 +78,8 @@ export function useWaterLog(storage: Storage = localStorage) {
       if (fireworksTimeoutRef.current !== null) {
         clearTimeout(fireworksTimeoutRef.current)
       }
-      if (goalMetTimeoutRef.current !== null) {
-        clearTimeout(goalMetTimeoutRef.current)
+      if (levelStatusTimeoutRef.current !== null) {
+        clearTimeout(levelStatusTimeoutRef.current)
       }
       if (minMetTimeoutRef.current !== null) {
         clearTimeout(minMetTimeoutRef.current)
@@ -97,20 +102,22 @@ export function useWaterLog(storage: Storage = localStorage) {
         settings.minimumTarget,
         settings.maximumTarget,
       )
+      const nextStatus = getLevelStatus(next, settings.minimumTarget)
+      if (levelStatusTimeoutRef.current !== null) {
+        clearTimeout(levelStatusTimeoutRef.current)
+        levelStatusTimeoutRef.current = null
+      }
+
       if (crossingDelay !== null) {
-        if (goalMetTimeoutRef.current !== null) {
-          clearTimeout(goalMetTimeoutRef.current)
-        }
         if (minMetTimeoutRef.current !== null) {
           clearTimeout(minMetTimeoutRef.current)
         }
-        const met = next >= settings.minimumTarget
-        goalMetTimeoutRef.current = setTimeout(() => {
-          goalMetTimeoutRef.current = null
-          setGoalMet(met)
+        levelStatusTimeoutRef.current = setTimeout(() => {
+          levelStatusTimeoutRef.current = null
+          setLevelStatus(nextStatus)
         }, crossingDelay)
 
-        if (met) {
+        if (next >= settings.minimumTarget) {
           saveMinMetAt(storage, dayKey, updatedAt)
           minMetTimeoutRef.current = setTimeout(() => {
             minMetTimeoutRef.current = null
@@ -123,6 +130,8 @@ export function useWaterLog(storage: Storage = localStorage) {
             setMinMetAt(null)
           }, crossingDelay)
         }
+      } else {
+        setLevelStatus(nextStatus)
       }
 
       if (shouldFireFireworks(previous, next, settings.minimumTarget)) {
@@ -181,7 +190,7 @@ export function useWaterLog(storage: Storage = localStorage) {
       if (!result.ok) return result
       setSettings(next)
       saveSettings(storage, next)
-      setGoalMet(dailyTotal >= next.minimumTarget)
+      setLevelStatus(getLevelStatus(dailyTotal, next.minimumTarget))
       return result
     },
     [dailyTotal, storage],
@@ -194,7 +203,7 @@ export function useWaterLog(storage: Storage = localStorage) {
     dailyTotal,
     lastUpdated,
     minMetAt,
-    goalMet,
+    levelStatus,
     viewingToday,
     fireworksToken,
     addAmount,

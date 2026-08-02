@@ -10,8 +10,8 @@ export default function App() {
   const log = useWaterLog()
 
   useEffect(() => {
-    document.body.dataset.goalMet = log.goalMet ? 'true' : 'false'
-  }, [log.goalMet])
+    document.body.dataset.levelStatus = log.levelStatus
+  }, [log.levelStatus])
 
   if (screen === 'settings') {
     return (
