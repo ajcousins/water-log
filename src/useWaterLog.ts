@@ -15,32 +15,39 @@ import {
 import {
   loadDailyTotal,
   loadLastUpdated,
+  loadMinMetAt,
   loadSettings,
+  clearMinMetAt,
   saveDailyTotal,
   saveLastUpdated,
+  saveMinMetAt,
   saveSettings,
 } from './storage'
 
 export function useWaterLog(storage: Storage = localStorage) {
+  const todayKey = toDayKey(new Date())
   const [settings, setSettings] = useState<Settings>(() => loadSettings(storage))
   const [selectedDay, setSelectedDay] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), now.getDate())
   })
   const [dailyTotal, setDailyTotal] = useState(() =>
-    loadDailyTotal(storage, toDayKey(new Date())),
+    loadDailyTotal(storage, todayKey),
   )
   const [lastUpdated, setLastUpdated] = useState<number | null>(() =>
-    loadLastUpdated(storage, toDayKey(new Date())),
+    loadLastUpdated(storage, todayKey),
+  )
+  const [minMetAt, setMinMetAt] = useState<number | null>(() =>
+    loadMinMetAt(storage, todayKey),
   )
   const [goalMet, setGoalMet] = useState(
     () =>
-      loadDailyTotal(storage, toDayKey(new Date())) >=
-      loadSettings(storage).minimumTarget,
+      loadDailyTotal(storage, todayKey) >= loadSettings(storage).minimumTarget,
   )
   const [fireworksToken, setFireworksToken] = useState(0)
   const fireworksTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const goalMetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const minMetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const dayKey = useMemo(() => toDayKey(selectedDay), [selectedDay])
   const viewingToday = isToday(selectedDay)
@@ -49,9 +56,14 @@ export function useWaterLog(storage: Storage = localStorage) {
     const total = loadDailyTotal(storage, dayKey)
     setDailyTotal(total)
     setLastUpdated(loadLastUpdated(storage, dayKey))
+    setMinMetAt(loadMinMetAt(storage, dayKey))
     if (goalMetTimeoutRef.current !== null) {
       clearTimeout(goalMetTimeoutRef.current)
       goalMetTimeoutRef.current = null
+    }
+    if (minMetTimeoutRef.current !== null) {
+      clearTimeout(minMetTimeoutRef.current)
+      minMetTimeoutRef.current = null
     }
     setGoalMet(total >= settings.minimumTarget)
   }, [dayKey, storage, settings.minimumTarget])
@@ -63,6 +75,9 @@ export function useWaterLog(storage: Storage = localStorage) {
       }
       if (goalMetTimeoutRef.current !== null) {
         clearTimeout(goalMetTimeoutRef.current)
+      }
+      if (minMetTimeoutRef.current !== null) {
+        clearTimeout(minMetTimeoutRef.current)
       }
     }
   }, [])
@@ -86,11 +101,28 @@ export function useWaterLog(storage: Storage = localStorage) {
         if (goalMetTimeoutRef.current !== null) {
           clearTimeout(goalMetTimeoutRef.current)
         }
+        if (minMetTimeoutRef.current !== null) {
+          clearTimeout(minMetTimeoutRef.current)
+        }
         const met = next >= settings.minimumTarget
         goalMetTimeoutRef.current = setTimeout(() => {
           goalMetTimeoutRef.current = null
           setGoalMet(met)
         }, crossingDelay)
+
+        if (met) {
+          saveMinMetAt(storage, dayKey, updatedAt)
+          minMetTimeoutRef.current = setTimeout(() => {
+            minMetTimeoutRef.current = null
+            setMinMetAt(updatedAt)
+          }, crossingDelay)
+        } else {
+          clearMinMetAt(storage, dayKey)
+          minMetTimeoutRef.current = setTimeout(() => {
+            minMetTimeoutRef.current = null
+            setMinMetAt(null)
+          }, crossingDelay)
+        }
       }
 
       if (shouldFireFireworks(previous, next, settings.minimumTarget)) {
@@ -161,6 +193,7 @@ export function useWaterLog(storage: Storage = localStorage) {
     dayLabel: formatDayLabel(selectedDay),
     dailyTotal,
     lastUpdated,
+    minMetAt,
     goalMet,
     viewingToday,
     fireworksToken,

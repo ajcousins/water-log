@@ -3,9 +3,12 @@ import { DEFAULT_SETTINGS } from './domain'
 import {
   loadDailyTotal,
   loadLastUpdated,
+  loadMinMetAt,
   loadSettings,
+  clearMinMetAt,
   saveDailyTotal,
   saveLastUpdated,
+  saveMinMetAt,
   saveSettings,
 } from './storage'
 
@@ -69,5 +72,16 @@ describe('persistence', () => {
     saveLastUpdated(storage, '2026-07-30', 1_722_000_000_000)
     expect(loadLastUpdated(storage, '2026-07-30')).toBe(1_722_000_000_000)
     expect(loadLastUpdated(storage, '2026-07-29')).toBeNull()
+  })
+
+  it('rewrites and clears Minimum Target met time', () => {
+    const storage = memoryStorage()
+    expect(loadMinMetAt(storage, '2026-07-30')).toBeNull()
+    saveMinMetAt(storage, '2026-07-30', 100)
+    expect(loadMinMetAt(storage, '2026-07-30')).toBe(100)
+    saveMinMetAt(storage, '2026-07-30', 200)
+    expect(loadMinMetAt(storage, '2026-07-30')).toBe(200)
+    clearMinMetAt(storage, '2026-07-30')
+    expect(loadMinMetAt(storage, '2026-07-30')).toBeNull()
   })
 })

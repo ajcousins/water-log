@@ -10,6 +10,7 @@ type MainScreenProps = {
   viewingToday: boolean
   dailyTotal: number
   lastUpdated: number | null
+  minMetAt: number | null
   settings: Settings
   fireworksToken: number
   onBackDay: () => void
@@ -24,6 +25,7 @@ export function MainScreen({
   viewingToday,
   dailyTotal,
   lastUpdated,
+  minMetAt,
   settings,
   fireworksToken,
   onBackDay,
@@ -77,6 +79,7 @@ export function MainScreen({
           dailyTotal={dailyTotal}
           settings={settings}
           lastUpdated={lastUpdated}
+          minMetAt={minMetAt}
         />
       </main>
 

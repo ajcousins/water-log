@@ -29,6 +29,7 @@ export default function App() {
       viewingToday={log.viewingToday}
       dailyTotal={log.dailyTotal}
       lastUpdated={log.lastUpdated}
+      minMetAt={log.minMetAt}
       settings={log.settings}
       fireworksToken={log.fireworksToken}
       onBackDay={log.goBack}

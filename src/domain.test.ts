@@ -6,8 +6,8 @@ import {
   exceedsMaximumTarget,
   fillCrossingDelayMs,
   fillThresholdCrossingDelayMs,
+  formatClockTime,
   formatDayLabel,
-  formatLastUpdatedLabel,
   isToday,
   removeFromDailyTotal,
   shiftDay,
@@ -164,33 +164,14 @@ describe('Day', () => {
   })
 })
 
-describe('formatLastUpdatedLabel', () => {
-  const now = Date.parse('2026-07-30T15:00:00')
-
-  it('returns a single space when there is no timestamp', () => {
-    expect(formatLastUpdatedLabel(null, now)).toBe(' ')
+describe('formatClockTime', () => {
+  it('formats a local 24-hour HH:mm timestamp', () => {
+    const at = new Date(2026, 6, 30, 14, 8, 0).getTime()
+    expect(formatClockTime(at)).toBe('14:08')
   })
 
-  it('returns just now under one minute', () => {
-    expect(formatLastUpdatedLabel(now - 30_000, now)).toBe('Updated just now')
-  })
-
-  it('returns singular and plural minutes', () => {
-    expect(formatLastUpdatedLabel(now - 60_000, now)).toBe('Updated 1 minute ago')
-    expect(formatLastUpdatedLabel(now - 10 * 60_000, now)).toBe(
-      'Updated 10 minutes ago',
-    )
-    expect(formatLastUpdatedLabel(now - 12 * 60_000, now)).toBe(
-      'Updated 12 minutes ago',
-    )
-  })
-
-  it('returns singular and plural hours', () => {
-    expect(formatLastUpdatedLabel(now - 60 * 60_000, now)).toBe(
-      'Updated 1 hour ago',
-    )
-    expect(formatLastUpdatedLabel(now - 2 * 60 * 60_000, now)).toBe(
-      'Updated 2 hours ago',
-    )
+  it('zero-pads single-digit hours and minutes', () => {
+    const at = new Date(2026, 6, 30, 9, 5, 0).getTime()
+    expect(formatClockTime(at)).toBe('09:05')
   })
 })

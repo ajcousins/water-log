@@ -3,9 +3,10 @@ import { DEFAULT_SETTINGS, type Settings } from './domain'
 const SETTINGS_KEY = 'water-log:settings'
 const TOTALS_KEY = 'water-log:totals'
 const UPDATED_AT_KEY = 'water-log:updated-at'
+const MIN_MET_AT_KEY = 'water-log:min-met-at'
 
 type TotalsMap = Record<string, number>
-type UpdatedAtMap = Record<string, number>
+type TimestampMap = Record<string, number>
 
 export function loadSettings(storage: Storage): Settings {
   const raw = storage.getItem(SETTINGS_KEY)
@@ -53,23 +54,38 @@ export function saveDailyTotal(
   storage.setItem(TOTALS_KEY, JSON.stringify(totals))
 }
 
-function loadUpdatedAtMap(storage: Storage): UpdatedAtMap {
-  const raw = storage.getItem(UPDATED_AT_KEY)
+function loadTimestampMap(storage: Storage, key: string): TimestampMap {
+  const raw = storage.getItem(key)
   if (!raw) return {}
   try {
-    const parsed = JSON.parse(raw) as UpdatedAtMap
+    const parsed = JSON.parse(raw) as TimestampMap
     return parsed && typeof parsed === 'object' ? parsed : {}
   } catch {
     return {}
   }
 }
 
+function loadTimestamp(storage: Storage, key: string, dayKey: string): number | null {
+  const value = loadTimestampMap(storage, key)[dayKey]
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function saveTimestamp(
+  storage: Storage,
+  key: string,
+  dayKey: string,
+  at: number,
+): void {
+  const map = loadTimestampMap(storage, key)
+  map[dayKey] = at
+  storage.setItem(key, JSON.stringify(map))
+}
+
 export function loadLastUpdated(
   storage: Storage,
   dayKey: string,
 ): number | null {
-  const value = loadUpdatedAtMap(storage)[dayKey]
-  return typeof value === 'number' && Number.isFinite(value) ? value : null
+  return loadTimestamp(storage, UPDATED_AT_KEY, dayKey)
 }
 
 export function saveLastUpdated(
@@ -77,7 +93,24 @@ export function saveLastUpdated(
   dayKey: string,
   at: number,
 ): void {
-  const map = loadUpdatedAtMap(storage)
-  map[dayKey] = at
-  storage.setItem(UPDATED_AT_KEY, JSON.stringify(map))
+  saveTimestamp(storage, UPDATED_AT_KEY, dayKey, at)
+}
+
+export function loadMinMetAt(storage: Storage, dayKey: string): number | null {
+  return loadTimestamp(storage, MIN_MET_AT_KEY, dayKey)
+}
+
+export function saveMinMetAt(
+  storage: Storage,
+  dayKey: string,
+  at: number,
+): void {
+  saveTimestamp(storage, MIN_MET_AT_KEY, dayKey, at)
+}
+
+export function clearMinMetAt(storage: Storage, dayKey: string): void {
+  const map = loadTimestampMap(storage, MIN_MET_AT_KEY)
+  if (!(dayKey in map)) return
+  delete map[dayKey]
+  storage.setItem(MIN_MET_AT_KEY, JSON.stringify(map))
 }
