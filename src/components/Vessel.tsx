@@ -43,24 +43,26 @@ export function Vessel({ dailyTotal, settings }: VesselProps) {
           }}
         />
 
-        {marks.map((mark) => {
-          const top = `${(1 - mark / settings.maximumTarget) * 100}%`
-          const isMax = mark === settings.maximumTarget
-          return (
-            <div
-              key={mark}
-              className="pointer-events-none absolute right-0 left-0 flex items-center"
-              style={{ top }}
-            >
+        {marks
+          .filter((mark) => mark < settings.maximumTarget)
+          .map((mark) => {
+            const top = `${(1 - mark / settings.maximumTarget) * 100}%`
+            return (
               <div
-                className={`h-px flex-1 ${isMax ? 'bg-[var(--pool-deep)]/50' : 'bg-[var(--pool)]/25'}`}
-              />
-              <span className="w-10 pr-2 text-right text-[0.65rem] text-[var(--ink-muted)]">
-                {mark}
-              </span>
-            </div>
-          )
-        })}
+                key={mark}
+                className="pointer-events-none absolute inset-x-0 h-0"
+                style={{ top }}
+              >
+                {/* Center the tick on the percentage so label height does not push the line down */}
+                <div className="flex -translate-y-1/2 items-center">
+                  <div className="h-px flex-1 bg-[var(--pool)]/25" />
+                  <span className="w-10 pr-2 text-right text-[0.65rem] leading-none text-[var(--ink-muted)]">
+                    {mark}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
 
         <div
           className="pointer-events-none absolute right-0 left-0 border-t border-dashed border-[var(--pool-deep)]/70"
