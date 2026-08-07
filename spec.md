@@ -1,23 +1,26 @@
 # Water Log - Specification
 
-A simple, lightweight, mobile-first web application that helps a single user track their daily water intake on one device.
+A simple, lightweight, mobile-first web application that helps a user track their daily water intake. Anonymous local use works on one device; an optional **Account** enables multi-device Adjustment sync and **Follow** so one other person’s level can appear on the Vessel.
 
-Domain vocabulary lives in [CONTEXT.md](CONTEXT.md). Architectural decisions live in [docs/adr/](docs/adr/).
+Domain vocabulary lives in [CONTEXT.md](CONTEXT.md). Architectural decisions live in [docs/adr/](docs/adr/). Feature PRD: [.scratch/follow-and-sync/spec.md](.scratch/follow-and-sync/spec.md).
 
 ## Stack
 
 - React + Vite (static page)
 - TypeScript
 - Tailwind CSS
+- Supabase (Auth + Postgres) for Accounts, Adjustment sync, and Follow — see [ADR 0002](docs/adr/0002-supabase-for-accounts-and-sync.md)
 
 ## Core concepts
 
 - A **Day** is the device’s local calendar date.
-- Each Day has a **Daily Total**: a single running total in whole millilitres (not a list of individual drinks).
-- **Settings** are global: **Minimum Target**, **Maximum Target**, **Small** amount, and **Large** amount. The same Settings apply when viewing any Day.
+- Each Day’s **Daily Total** is max(0, sum of that Day’s **Adjustments**) in whole millilitres. Adjustments are not shown as a list; the UI shows only the Daily Total. See [ADR 0003](docs/adr/0003-sync-adjustments-expose-daily-totals.md).
+- **Settings** are global on the device: **Minimum Target**, **Maximum Target**, **Small** amount, and **Large** amount. The same Settings apply when viewing any Day. Settings are not synced across devices.
 - The **Vessel** is the visual representation of the Daily Total from 0 up to the Maximum Target.
+- An **Account** (username + password) is optional. Without one, data stays local only.
+- A **Follow** is a one-way, consented relationship: the follower may show the followed user’s level on their Vessel (at most one active Follow in MVP).
 
-All amounts in the app are whole millilitres only (positive integers where an amount is entered; totals floor at 0).
+All amounts in the app are whole millilitres only (positive integers where an amount is entered; Daily Total floors at 0).
 
 ## Main screen
 
@@ -26,7 +29,7 @@ All amounts in the app are whole millilitres only (positive integers where an am
 - At the top of the page, show the selected Day’s date in the form `Thu, 30 Jul 2026`.
 - A triangle arrow to the left navigates one Day backward. Back-navigation is unlimited: empty Days (no stored total) display as 0 ml until the user adds water.
 - A triangle arrow to the right navigates one Day forward. It is disabled when the selected Day is today, so the user cannot navigate into the future.
-- Past Days are writable: Small, Large, and Custom adjust that Day’s Daily Total the same way as today.
+- Past Days are writable: Small, Large, and Custom adjust that Day the same way as today.
 
 ### Total display
 
@@ -42,12 +45,24 @@ All amounts in the app are whole millilitres only (positive integers where an am
 - Mark the Minimum Target and Maximum Target on the Vessel.
 - Mark progress every 200 ml between 0 and the Maximum Target.
 
+### Follow marker
+
+When the user has an accepted Follow, show at most one marker for the followed user on the selected Day:
+
+- Matched by calendar date string (e.g. `2026-08-06`), each user’s own local Day with that label.
+- Position is absolute millilitres on the **viewer’s** Maximum Target scale (not percent of the followed user’s targets), clamped at the Vessel top.
+- Drawn inside the Vessel, left of centre: inverted triangle pointing at the level; label above with `username @ time` (latest Adjustment time for that Day, in the viewer’s local timezone).
+- When the followed user’s Daily Total is at or above the viewer’s Maximum Target, show their true amount in millilitres beneath the marker.
+- Hide the marker when their Daily Total for that Day is missing or 0.
+- Refresh about every 30 seconds while the app is open.
+- Followers receive only Daily Total + latest Adjustment time for the Day — not raw Adjustments.
+
 ### Fill controls
 
 Three circular buttons at the bottom of the page:
 
-- **Small** — increases the selected Day’s Daily Total by the configured Small amount.
-- **Large** — increases the selected Day’s Daily Total by the configured Large amount.
+- **Small** — records a positive Adjustment of the configured Small amount for the selected Day.
+- **Large** — records a positive Adjustment of the configured Large amount for the selected Day.
 - **Custom** — opens the Custom adjust modal (see below).
 
 ### Settings entry
@@ -60,8 +75,8 @@ Opened by the Custom button.
 
 - The user enters a whole-millilitre amount.
 - Two actions at the bottom: **Add** and **Remove**.
-- **Add** increases the Daily Total by that amount.
-- **Remove** decreases the Daily Total by that amount. If the result would be negative, the Daily Total becomes **0** (floor).
+- **Add** records a positive Adjustment of that amount.
+- **Remove** records a negative Adjustment of that amount. Daily Total is max(0, sum of Adjustments).
 
 ## Settings screen
 
@@ -78,6 +93,16 @@ Validation: saving is blocked with an error unless **Minimum Target < Maximum Ta
 
 Changing Settings updates the Vessel marks for every Day immediately (including past Days). Historical Daily Totals are not re-keyed or snapshotted against old targets. See [ADR 0001](docs/adr/0001-global-settings-across-days.md).
 
+### Account and Follow (Settings)
+
+- Sign up / sign in / sign out (username + password; Auth uses a synthetic email under the hood).
+- Usernames are globally unique, fixed after signup, matched exactly (case-sensitive) for Follow Requests.
+- Following control: show active Follow or outgoing pending Follow Request; Unfollow or cancel pending.
+- Send Follow Request by username (blocked while an active Follow or outgoing pending Request exists; cannot Follow self).
+- List of users who Follow you, with revoke.
+- Incoming Follow Requests: polled ~30s; one Accept/Reject modal at a time; after Accept or Reject, show the next if any. Cancel of an outgoing Request allows immediate re-request; Reject imposes a 24-hour wait before requesting that user again.
+- Many users may Follow the same person; MVP allows only one active Follow (and one Follow marker) per user.
+
 ## Fireworks
 
 Fireworks fire on the page when the Daily Total **increases** from **below** the Minimum Target to **at or above** the Minimum Target (landing exactly on the Minimum Target counts).
@@ -88,18 +113,20 @@ Fireworks fire on the page when the Daily Total **increases** from **below** the
 
 Navigating to a Day that is already at or above the Minimum Target does not fire fireworks by itself.
 
-## Persistence
+## Persistence and sync
 
-All user data is stored in the browser’s local storage:
-
-- Settings (Minimum Target, Maximum Target, Small, Large).
-- Daily Total per Day (keyed by local calendar date), so the user can navigate history and edit past intake.
-
-Missing Days are treated as 0 ml until water is added for that date.
+- **Anonymous:** Settings and Adjustments (Daily Totals derived) in browser local storage. Missing Days are 0 ml until water is added.
+- **Signed in:** Adjustments sync via Supabase across the user’s devices; ~30s pull while the app is open. Offline: update UI immediately and queue sync. Creating an Account does not upload prior anonymous history. On sign-in, remote replaces overlapping anonymous local Days. On sign-out, keep local numbers as anonymous; drop session and Follow marker.
+- Published Daily Totals are readable only by users with an accepted Follow.
 
 ## Out of scope
 
-- Accounts / multi-user
-- Cloud sync / multi-device
-- Reminders / notifications
+- Password reset / email recovery
+- Account deletion
+- Push notifications
+- Multiple Follow markers / following more than one person at a time
+- Syncing Settings across devices
+- Uploading anonymous history on Account creation
+- Reminders / notifications (aside from in-app Follow Request modals)
 - Units other than millilitres
+- Visible Adjustment / drink history
