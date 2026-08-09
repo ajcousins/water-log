@@ -45,17 +45,18 @@ All amounts in the app are whole millilitres only (positive integers where an am
 - Mark the Minimum Target and Maximum Target on the Vessel.
 - Mark progress every 200 ml between 0 and the Maximum Target.
 
-### Follow marker
+### Follow Vessel
 
-When the user has an accepted Follow, show at most one marker for the followed user on the selected Day:
+When the user has an accepted Follow, show a **Follow Vessel** to the left of their Vessel:
 
-- Matched by calendar date string (e.g. `2026-08-06`), each user’s own local Day with that label.
-- Position is absolute millilitres on the **viewer’s** Maximum Target scale (not percent of the followed user’s targets), clamped at the Vessel top.
-- Drawn inside the Vessel, left of centre: inverted triangle pointing at the level; label above with `username @ time` (latest Adjustment time for that Day, in the viewer’s local timezone).
-- When the followed user’s Daily Total is at or above the viewer’s Maximum Target, show their true amount in millilitres beneath the marker.
-- Hide the marker when their Daily Total for that Day is missing or 0.
-- Refresh about every 30 seconds while the app is open.
-- Followers receive only Daily Total + latest Adjustment time for the Day — not raw Adjustments.
+- About 10% of the viewer’s Vessel width; same height; same Maximum Target scale (absolute millilitres).
+- Fill clamps at the viewer’s Maximum Target; no Min / 200 ml marks.
+- Username centred beneath the Follow Vessel.
+- Latest Adjustment time for that Day to the left of the Follow Vessel at the water line (mirror of the viewer’s stamp on the right); omitted when there is no update.
+- Still shown when the followed Daily Total is 0 or missing (empty fill).
+- When the followed Daily Total **exceeds** the viewer’s Maximum Target, show the true amount centred above the Follow Vessel; hide that amount otherwise.
+- Matched by calendar date string; refresh about every 30 seconds while the app is open.
+- Followers receive only Daily Total + latest Adjustment time — not raw Adjustments.
 
 ### Fill controls
 
@@ -101,7 +102,7 @@ Changing Settings updates the Vessel marks for every Day immediately (including 
 - Send Follow Request by username (blocked while an active Follow or outgoing pending Request exists; cannot Follow self).
 - List of users who Follow you, with revoke.
 - Incoming Follow Requests: polled ~30s; one Accept/Reject modal at a time; after Accept or Reject, show the next if any. Cancel of an outgoing Request allows immediate re-request; Reject imposes a 24-hour wait before requesting that user again.
-- Many users may Follow the same person; MVP allows only one active Follow (and one Follow marker) per user.
+- Many users may Follow the same person; MVP allows only one active Follow (and one Follow Vessel) per user.
 
 ## Fireworks
 
@@ -116,7 +117,7 @@ Navigating to a Day that is already at or above the Minimum Target does not fire
 ## Persistence and sync
 
 - **Anonymous:** Settings and Adjustments (Daily Totals derived) in browser local storage. Missing Days are 0 ml until water is added.
-- **Signed in:** Adjustments sync via Supabase across the user’s devices; ~30s pull while the app is open. Offline: update UI immediately and queue sync. Creating an Account does not upload prior anonymous history. On sign-in, remote replaces overlapping anonymous local Days. On sign-out, keep local numbers as anonymous; drop session and Follow marker.
+- **Signed in:** Adjustments sync via Supabase across the user’s devices; ~30s pull while the app is open. Offline: update UI immediately and queue sync. Creating an Account does not upload prior anonymous history. On sign-in, remote replaces overlapping anonymous local Days. On sign-out, keep local numbers as anonymous; drop session and Follow Vessel.
 - Published Daily Totals are readable only by users with an accepted Follow.
 
 ## Out of scope
@@ -124,7 +125,7 @@ Navigating to a Day that is already at or above the Minimum Target does not fire
 - Password reset / email recovery
 - Account deletion
 - Push notifications
-- Multiple Follow markers / following more than one person at a time
+- Multiple Follow Vessels / following more than one person at a time
 - Syncing Settings across devices
 - Uploading anonymous history on Account creation
 - Reminders / notifications (aside from in-app Follow Request modals)

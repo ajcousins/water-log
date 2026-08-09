@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { HiOutlineCog6Tooth } from 'react-icons/hi2'
 import type { Settings } from '../domain'
-import type { FollowedDayProjection } from '../remote/types'
 import { CustomModal } from './CustomModal'
 import { Fireworks } from './Fireworks'
-import { Vessel } from './Vessel'
+import { Vessel, type FollowVesselView } from './Vessel'
 
 type MainScreenProps = {
   dayLabel: string
@@ -14,7 +13,7 @@ type MainScreenProps = {
   minMetAt: number | null
   settings: Settings
   fireworksToken: number
-  followProjection?: FollowedDayProjection | null
+  followVessel?: FollowVesselView | null
   onBackDay: () => void
   onForwardDay: () => void
   onOpenSettings: () => void
@@ -30,7 +29,7 @@ export function MainScreen({
   minMetAt,
   settings,
   fireworksToken,
-  followProjection = null,
+  followVessel = null,
   onBackDay,
   onForwardDay,
   onOpenSettings,
@@ -83,7 +82,7 @@ export function MainScreen({
           settings={settings}
           lastUpdated={lastUpdated}
           minMetAt={minMetAt}
-          followProjection={followProjection}
+          followVessel={followVessel}
         />
       </main>
 

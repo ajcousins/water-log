@@ -7,7 +7,7 @@ import {
   exceedsMaximumTarget,
   fillCrossingDelayMs,
   fillThresholdCrossingDelayMs,
-  followMarkerPlacement,
+  followVesselFill,
   formatClockTime,
   formatDayLabel,
   isToday,
@@ -188,31 +188,27 @@ describe('formatClockTime', () => {
   })
 })
 
-describe('Follow marker placement', () => {
-  it('hides when Daily Total is 0', () => {
-    expect(followMarkerPlacement(0, 2500)).toEqual({
-      visible: false,
+describe('Follow Vessel fill', () => {
+  it('is empty at 0 with no overshoot label', () => {
+    expect(followVesselFill(0, 2500)).toEqual({
       ratio: 0,
       overshootMl: null,
     })
   })
 
   it('places absolute ml on the viewer scale', () => {
-    expect(followMarkerPlacement(1250, 2500)).toEqual({
-      visible: true,
+    expect(followVesselFill(1250, 2500)).toEqual({
       ratio: 0.5,
       overshootMl: null,
     })
   })
 
-  it('clamps at top and shows true ml at or above Maximum Target', () => {
-    expect(followMarkerPlacement(2500, 2500)).toEqual({
-      visible: true,
+  it('clamps at top and shows true ml only when exceeding Maximum Target', () => {
+    expect(followVesselFill(2500, 2500)).toEqual({
       ratio: 1,
-      overshootMl: 2500,
+      overshootMl: null,
     })
-    expect(followMarkerPlacement(3500, 2500)).toEqual({
-      visible: true,
+    expect(followVesselFill(3500, 2500)).toEqual({
       ratio: 1,
       overshootMl: 3500,
     })

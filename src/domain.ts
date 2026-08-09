@@ -178,31 +178,26 @@ export function formatClockTime(updatedAt: number): string {
   return `${hours}:${minutes}`
 }
 
-/** Follow marker placement on the viewer’s Vessel. Hidden when total is 0 or missing. */
-export type FollowMarkerPlacement = {
-  visible: boolean
+/** Follow Vessel fill on the viewer’s Maximum Target scale. */
+export type FollowVesselFill = {
   /** 0–1 height from bottom; clamped at Maximum Target. */
   ratio: number
-  /** True millilitres when at or above Maximum Target; otherwise null. */
+  /** True millilitres when Daily Total exceeds Maximum Target; otherwise null. */
   overshootMl: number | null
 }
 
-export function followMarkerPlacement(
+export function followVesselFill(
   followedDailyTotal: number,
   viewerMaximumTarget: number,
-): FollowMarkerPlacement {
-  if (followedDailyTotal <= 0) {
-    return { visible: false, ratio: 0, overshootMl: null }
-  }
+): FollowVesselFill {
+  const total = Math.max(0, followedDailyTotal)
   if (viewerMaximumTarget <= 0) {
     return {
-      visible: true,
-      ratio: 1,
-      overshootMl: followedDailyTotal,
+      ratio: total > 0 ? 1 : 0,
+      overshootMl: total > 0 ? total : null,
     }
   }
-  const ratio = Math.min(1, followedDailyTotal / viewerMaximumTarget)
-  const overshootMl =
-    followedDailyTotal >= viewerMaximumTarget ? followedDailyTotal : null
-  return { visible: true, ratio, overshootMl }
+  const ratio = Math.min(1, total / viewerMaximumTarget)
+  const overshootMl = total > viewerMaximumTarget ? total : null
+  return { ratio, overshootMl }
 }

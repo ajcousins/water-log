@@ -64,6 +64,15 @@ export default function App() {
     )
   }
 
+  const followVessel =
+    follow.followState.following != null
+      ? {
+          username: follow.followState.following.username,
+          dailyTotal: follow.projection?.dailyTotal ?? 0,
+          latestAt: follow.projection?.latestAt ?? null,
+        }
+      : null
+
   return (
     <>
       <MainScreen
@@ -74,7 +83,7 @@ export default function App() {
         minMetAt={log.minMetAt}
         settings={log.settings}
         fireworksToken={log.fireworksToken}
-        followProjection={follow.projection}
+        followVessel={followVessel}
         onBackDay={log.goBack}
         onForwardDay={log.goForward}
         onOpenSettings={() => setScreen('settings')}
