@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { type Settings, validateSettings } from '../domain'
-import type { AccountSession } from '../remote/types'
+import type { AccountSession, FollowState } from '../remote/types'
 
 type SettingsScreenProps = {
   settings: Settings
@@ -17,6 +17,17 @@ type SettingsScreenProps = {
     password: string,
   ) => Promise<{ ok: true } | { ok: false; error: string }>
   onSignOut: () => Promise<void>
+  followState?: FollowState
+  onSendFollowRequest?: (
+    username: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>
+  onCancelFollowRequest?: (
+    requestId: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>
+  onUnfollow?: () => Promise<{ ok: true } | { ok: false; error: string }>
+  onRevokeFollower?: (
+    userId: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>
 }
 
 export function SettingsScreen({
@@ -28,6 +39,11 @@ export function SettingsScreen({
   onSignUp,
   onSignIn,
   onSignOut,
+  followState,
+  onSendFollowRequest,
+  onCancelFollowRequest,
+  onUnfollow,
+  onRevokeFollower,
 }: SettingsScreenProps) {
   const [draft, setDraft] = useState({
     minimumTarget: String(settings.minimumTarget),
@@ -42,6 +58,9 @@ export function SettingsScreen({
   const [accountMessage, setAccountMessage] = useState<string | null>(null)
   const [accountBusy, setAccountBusy] = useState(false)
   const [accountMode, setAccountMode] = useState<'signIn' | 'signUp'>('signIn')
+  const [followUsername, setFollowUsername] = useState('')
+  const [followError, setFollowError] = useState<string | null>(null)
+  const [followBusy, setFollowBusy] = useState(false)
 
   const signedInLabel = useMemo(
     () => (session ? `Signed in as ${session.username}` : null),
@@ -260,6 +279,127 @@ export function SettingsScreen({
           </form>
         )}
       </section>
+
+      {session && followState && onSendFollowRequest ? (
+        <section className="mt-10 flex flex-col gap-3 border-t border-[var(--glass-edge)] pt-8 pb-6">
+          <h2 className="font-[Fraunces,serif] text-2xl">Following</h2>
+          {followState.following ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-[var(--ink-muted)]">
+                Following{' '}
+                <span className="font-semibold text-[var(--ink)]">
+                  {followState.following.username}
+                </span>
+              </p>
+              <button
+                type="button"
+                disabled={followBusy || !onUnfollow}
+                onClick={() => {
+                  if (!onUnfollow) return
+                  setFollowBusy(true)
+                  void onUnfollow().finally(() => setFollowBusy(false))
+                }}
+                className="rounded-2xl border border-[var(--glass-edge)] bg-white/80 px-3 py-2 text-sm font-semibold text-[var(--pool-deep)]"
+              >
+                Unfollow
+              </button>
+            </div>
+          ) : followState.outgoingPending ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-[var(--ink-muted)]">
+                Pending request to{' '}
+                <span className="font-semibold text-[var(--ink)]">
+                  {followState.outgoingPending.to.username}
+                </span>
+              </p>
+              <button
+                type="button"
+                disabled={followBusy || !onCancelFollowRequest}
+                onClick={() => {
+                  if (!onCancelFollowRequest || !followState.outgoingPending) {
+                    return
+                  }
+                  setFollowBusy(true)
+                  void onCancelFollowRequest(
+                    followState.outgoingPending.id,
+                  ).finally(() => setFollowBusy(false))
+                }}
+                className="rounded-2xl border border-[var(--glass-edge)] bg-white/80 px-3 py-2 text-sm font-semibold text-[var(--pool-deep)]"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={(event) => {
+                event.preventDefault()
+                setFollowError(null)
+                setFollowBusy(true)
+                void onSendFollowRequest(followUsername).then((result) => {
+                  setFollowBusy(false)
+                  if (!result.ok) setFollowError(result.error)
+                  else setFollowUsername('')
+                })
+              }}
+            >
+              <label className="block text-sm text-[var(--ink-muted)]">
+                Username to Follow
+                <input
+                  value={followUsername}
+                  onChange={(event) => {
+                    setFollowUsername(event.target.value)
+                    setFollowError(null)
+                  }}
+                  className="mt-1 w-full rounded-2xl border border-[var(--glass-edge)] bg-white/80 px-4 py-3 text-lg outline-none focus:border-[var(--pool)]"
+                />
+              </label>
+              {followError ? (
+                <p className="text-sm text-[var(--over)]">{followError}</p>
+              ) : null}
+              <button
+                type="submit"
+                disabled={followBusy}
+                className="rounded-2xl bg-[var(--pool)] px-4 py-3 font-semibold text-white"
+              >
+                Send Follow Request
+              </button>
+            </form>
+          )}
+
+          <h3 className="mt-4 font-[Fraunces,serif] text-xl">Followers</h3>
+          {followState.followers.length === 0 ? (
+            <p className="text-sm text-[var(--ink-muted)]">No followers yet.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {followState.followers.map((follower) => (
+                <li
+                  key={follower.userId}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span className="text-sm font-semibold text-[var(--ink)]">
+                    {follower.username}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={followBusy || !onRevokeFollower}
+                    onClick={() => {
+                      if (!onRevokeFollower) return
+                      setFollowBusy(true)
+                      void onRevokeFollower(follower.userId).finally(() =>
+                        setFollowBusy(false),
+                      )
+                    }}
+                    className="rounded-2xl border border-[var(--glass-edge)] bg-white/80 px-3 py-2 text-sm font-semibold text-[var(--pool-deep)]"
+                  >
+                    Revoke
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
     </div>
   )
 }

@@ -177,3 +177,32 @@ export function formatClockTime(updatedAt: number): string {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
 }
+
+/** Follow marker placement on the viewer’s Vessel. Hidden when total is 0 or missing. */
+export type FollowMarkerPlacement = {
+  visible: boolean
+  /** 0–1 height from bottom; clamped at Maximum Target. */
+  ratio: number
+  /** True millilitres when at or above Maximum Target; otherwise null. */
+  overshootMl: number | null
+}
+
+export function followMarkerPlacement(
+  followedDailyTotal: number,
+  viewerMaximumTarget: number,
+): FollowMarkerPlacement {
+  if (followedDailyTotal <= 0) {
+    return { visible: false, ratio: 0, overshootMl: null }
+  }
+  if (viewerMaximumTarget <= 0) {
+    return {
+      visible: true,
+      ratio: 1,
+      overshootMl: followedDailyTotal,
+    }
+  }
+  const ratio = Math.min(1, followedDailyTotal / viewerMaximumTarget)
+  const overshootMl =
+    followedDailyTotal >= viewerMaximumTarget ? followedDailyTotal : null
+  return { visible: true, ratio, overshootMl }
+}

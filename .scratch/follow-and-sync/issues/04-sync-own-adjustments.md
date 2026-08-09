@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — Local Adjustments as the storage unit; 03 — Account signup / sign-in / sign-out in Settings
 
-**Status:** ready-for-human *(app sync code done — run adjustments SQL in Supabase)*
+**Status:** resolved
 
 - [x] Only Adjustments made after the Account exists sync (no anonymous history backfill on signup)
 - [x] On sign-in, remote data replaces overlapping anonymous local Days (remote wins)
@@ -13,7 +13,7 @@
 - [x] Offline: UI updates immediately; sync queues until back online
 - [x] Concurrent Adjustments from two devices merge by accumulation (Daily Total = max(0, sum))
 - [x] Settings are not synced
-- [ ] **You:** Run `supabase/migrations/20260809_adjustments.sql` in the Supabase SQL Editor (RLS on)
+- [x] **You:** Run `supabase/migrations/20260809_adjustments.sql` in the Supabase SQL Editor (RLS on)
 - [x] Tests use the remote façade fake for sync/sign-in rules
 
 ## Comments

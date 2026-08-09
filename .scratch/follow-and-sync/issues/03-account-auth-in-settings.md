@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — Supabase project setup
 
-**Status:** ready-for-human *(code done — run profiles SQL in Supabase, then mark resolved)*
+**Status:** resolved
 
 - [x] Client reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (publishable key only — not secret)
 - [x] Sign up with username + password from Settings (Auth uses synthetic email under the hood; see ticket 01 notes)
@@ -12,7 +12,7 @@
 - [x] Sign in and sign out work; sign-out returns the device to anonymous local mode
 - [x] Anonymous use still works with no Account
 - [x] Password reset and Account deletion remain unavailable (out of scope)
-- [ ] **You:** Run `supabase/migrations/20260809_profiles.sql` in the Supabase SQL Editor (creates `profiles` with RLS)
+- [x] **You:** Run `supabase/migrations/20260809_profiles.sql` in the Supabase SQL Editor (creates `profiles` with RLS)
 - [x] Remote façade (or equivalent seam) is faked in tests for Account behaviour — not Supabase client internals
 
 ## Comments

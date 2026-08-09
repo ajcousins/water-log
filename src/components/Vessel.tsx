@@ -2,17 +2,20 @@ import { useEffect, useState } from 'react'
 import {
   FILL_TRANSITION_MS,
   exceedsMaximumTarget,
+  followMarkerPlacement,
   formatClockTime,
   vesselFillRatio,
   vesselMarkAmounts,
   type Settings,
 } from '../domain'
+import type { FollowedDayProjection } from '../remote/types'
 
 type VesselProps = {
   dailyTotal: number
   settings: Settings
   lastUpdated: number | null
   minMetAt: number | null
+  followProjection?: FollowedDayProjection | null
 }
 
 export function Vessel({
@@ -20,6 +23,7 @@ export function Vessel({
   settings,
   lastUpdated,
   minMetAt,
+  followProjection = null,
 }: VesselProps) {
   const fillKey = `${dailyTotal}:${lastUpdated ?? 'none'}`
   const [revealedFor, setRevealedFor] = useState<string | null>(null)
@@ -30,8 +34,13 @@ export function Vessel({
     settings.maximumTarget > 0
       ? `${(1 - settings.minimumTarget / settings.maximumTarget) * 100}%`
       : '0%'
-  // Hide on the same render the level changes (before paint), then reveal after the fill settles
   const stampVisible = lastUpdated !== null && revealedFor === fillKey
+  const marker = followProjection
+    ? followMarkerPlacement(
+        followProjection.dailyTotal,
+        settings.maximumTarget,
+      )
+    : { visible: false, ratio: 0, overshootMl: null }
 
   useEffect(() => {
     if (lastUpdated === null) {
@@ -96,6 +105,31 @@ export function Vessel({
               Min {settings.minimumTarget}
             </span>
           </div>
+
+          {marker.visible && followProjection ? (
+            <div
+              className="pointer-events-none absolute z-[4] flex w-[42%] flex-col items-center"
+              style={{
+                left: '8%',
+                bottom: `${marker.ratio * 100}%`,
+                transform: 'translateY(50%)',
+              }}
+            >
+              <span className="mb-0.5 max-w-full truncate text-center text-[0.65rem] leading-tight text-[var(--ink)]">
+                {followProjection.username} @{' '}
+                {formatClockTime(followProjection.latestAt)}
+              </span>
+              <span
+                className="block h-0 w-0 border-x-[6px] border-t-[10px] border-x-transparent border-t-[var(--pool-deep)]"
+                aria-hidden
+              />
+              {marker.overshootMl !== null ? (
+                <span className="mt-0.5 text-[0.65rem] tabular-nums text-[var(--ink-muted)]">
+                  {marker.overshootMl}ml
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         {minMetAt !== null ? (

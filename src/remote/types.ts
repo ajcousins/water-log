@@ -12,7 +12,34 @@ export type RemoteAdjustment = {
   at: number
 }
 
-/** Remote façade for Account (and later sync / Follow). Tests use a fake. */
+export type FollowPeer = {
+  userId: string
+  username: string
+}
+
+export type FollowRequestInfo = {
+  id: string
+  from: FollowPeer
+  to: FollowPeer
+  createdAt: number
+}
+
+export type FollowState = {
+  following: FollowPeer | null
+  outgoingPending: FollowRequestInfo | null
+  incomingPending: FollowRequestInfo[]
+  followers: FollowPeer[]
+}
+
+export type FollowedDayProjection = {
+  username: string
+  dailyTotal: number
+  latestAt: number
+}
+
+export const FOLLOW_REJECT_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+/** Remote façade for Account, sync, and Follow. Tests use a fake. */
 export type RemoteWaterLog = {
   getSession: () => Promise<AccountSession | null>
   signUp: (username: string, password: string) => Promise<AccountResult>
@@ -23,6 +50,16 @@ export type RemoteWaterLog = {
   ) => () => void
   pushAdjustment: (adjustment: RemoteAdjustment) => Promise<AccountResult>
   pullAdjustments: () => Promise<RemoteAdjustment[]>
+  getFollowState: () => Promise<FollowState>
+  sendFollowRequest: (username: string) => Promise<AccountResult>
+  cancelFollowRequest: (requestId: string) => Promise<AccountResult>
+  acceptFollowRequest: (requestId: string) => Promise<AccountResult>
+  rejectFollowRequest: (requestId: string) => Promise<AccountResult>
+  unfollow: () => Promise<AccountResult>
+  revokeFollower: (followerUserId: string) => Promise<AccountResult>
+  getFollowedDayProjection: (
+    dayKey: string,
+  ) => Promise<FollowedDayProjection | null>
 }
 
 export const SYNTHETIC_EMAIL_DOMAIN = 'users.water-log.invalid'

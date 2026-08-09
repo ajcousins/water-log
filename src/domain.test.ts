@@ -7,6 +7,7 @@ import {
   exceedsMaximumTarget,
   fillCrossingDelayMs,
   fillThresholdCrossingDelayMs,
+  followMarkerPlacement,
   formatClockTime,
   formatDayLabel,
   isToday,
@@ -184,5 +185,36 @@ describe('formatClockTime', () => {
   it('zero-pads single-digit hours and minutes', () => {
     const at = new Date(2026, 6, 30, 9, 5, 0).getTime()
     expect(formatClockTime(at)).toBe('09:05')
+  })
+})
+
+describe('Follow marker placement', () => {
+  it('hides when Daily Total is 0', () => {
+    expect(followMarkerPlacement(0, 2500)).toEqual({
+      visible: false,
+      ratio: 0,
+      overshootMl: null,
+    })
+  })
+
+  it('places absolute ml on the viewer scale', () => {
+    expect(followMarkerPlacement(1250, 2500)).toEqual({
+      visible: true,
+      ratio: 0.5,
+      overshootMl: null,
+    })
+  })
+
+  it('clamps at top and shows true ml at or above Maximum Target', () => {
+    expect(followMarkerPlacement(2500, 2500)).toEqual({
+      visible: true,
+      ratio: 1,
+      overshootMl: 2500,
+    })
+    expect(followMarkerPlacement(3500, 2500)).toEqual({
+      visible: true,
+      ratio: 1,
+      overshootMl: 3500,
+    })
   })
 })
