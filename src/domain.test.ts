@@ -3,6 +3,7 @@ import {
   DEFAULT_SETTINGS,
   FILL_TRANSITION_MS,
   addToDailyTotal,
+  dailyTotalFromAdjustments,
   exceedsMaximumTarget,
   fillCrossingDelayMs,
   fillThresholdCrossingDelayMs,
@@ -29,6 +30,16 @@ describe('Daily Total', () => {
 
   it('removes without going negative when amount fits', () => {
     expect(removeFromDailyTotal(500, 100)).toBe(400)
+  })
+
+  it('is max(0, sum of Adjustments)', () => {
+    expect(dailyTotalFromAdjustments([{ amount: 150 }, { amount: 400 }])).toBe(
+      550,
+    )
+    expect(
+      dailyTotalFromAdjustments([{ amount: 100 }, { amount: -100 }, { amount: -100 }]),
+    ).toBe(0)
+    expect(dailyTotalFromAdjustments([])).toBe(0)
   })
 })
 

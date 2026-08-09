@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  addToDailyTotal,
   fillCrossingDelayMs,
   fillThresholdCrossingDelayMs,
   formatDayLabel,
   isToday,
-  removeFromDailyTotal,
   shiftDay,
   shouldFireFireworks,
   toDayKey,
@@ -13,21 +11,37 @@ import {
   validateSettings,
 } from './domain'
 import { getLevelStatus, type LevelStatus } from './helpers/levels'
+import type { RemoteWaterLog } from './remote/types'
 import {
+  appendAdjustment,
   loadDailyTotal,
   loadLastUpdated,
   loadMinMetAt,
   loadSettings,
   clearMinMetAt,
-  saveDailyTotal,
-  saveLastUpdated,
   saveMinMetAt,
   saveSettings,
 } from './storage'
+import {
+  flushOutboundAdjustments,
+  OWN_SYNC_POLL_MS,
+  pullAndMergeAdjustments,
+  queueLocalAdjustmentForSync,
+} from './sync/ownAdjustments'
 
-export function useWaterLog(storage: Storage = localStorage) {
+type UseWaterLogOptions = {
+  storage?: Storage
+  remote?: RemoteWaterLog | null
+  signedIn?: boolean
+}
+
+export function useWaterLog({
+  storage = localStorage,
+  remote = null,
+  signedIn = false,
+}: UseWaterLogOptions = {}) {
   const todayKey = toDayKey(new Date())
-  const [settings, setSettings] = useState<Settings>(() => loadSettings(storage))
+  const [settings, setSettings] = useState(() => loadSettings(storage))
   const [selectedDay, setSelectedDay] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -47,6 +61,7 @@ export function useWaterLog(storage: Storage = localStorage) {
       loadSettings(storage).minimumTarget,
     ),
   )
+  const [revision, setRevision] = useState(0)
   const [fireworksToken, setFireworksToken] = useState(0)
   const fireworksTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const levelStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -56,6 +71,15 @@ export function useWaterLog(storage: Storage = localStorage) {
 
   const dayKey = useMemo(() => toDayKey(selectedDay), [selectedDay])
   const viewingToday = isToday(selectedDay)
+
+  const reloadDay = useCallback(() => {
+    const total = loadDailyTotal(storage, dayKey)
+    setDailyTotal(total)
+    setLastUpdated(loadLastUpdated(storage, dayKey))
+    setMinMetAt(loadMinMetAt(storage, dayKey))
+    setLevelStatus(getLevelStatus(total, settings.minimumTarget))
+    setRevision((value) => value + 1)
+  }, [dayKey, settings.minimumTarget, storage])
 
   useEffect(() => {
     const total = loadDailyTotal(storage, dayKey)
@@ -71,7 +95,7 @@ export function useWaterLog(storage: Storage = localStorage) {
       minMetTimeoutRef.current = null
     }
     setLevelStatus(getLevelStatus(total, settings.minimumTarget))
-  }, [dayKey, storage, settings.minimumTarget])
+  }, [dayKey, storage, settings.minimumTarget, revision])
 
   useEffect(() => {
     return () => {
@@ -87,14 +111,51 @@ export function useWaterLog(storage: Storage = localStorage) {
     }
   }, [])
 
-  const applyTotal = useCallback(
-    (next: number) => {
+  useEffect(() => {
+    if (!remote || !signedIn) return
+
+    let cancelled = false
+
+    async function tick() {
+      try {
+        await flushOutboundAdjustments(storage, remote!)
+        await pullAndMergeAdjustments(storage, remote!)
+        if (!cancelled) reloadDay()
+      } catch {
+        // Offline or transient errors: keep local state; retry on next poll.
+      }
+    }
+
+    void tick()
+    const intervalId = window.setInterval(() => {
+      void tick()
+    }, OWN_SYNC_POLL_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
+  }, [remote, reloadDay, signedIn, storage])
+
+  const applyAdjustment = useCallback(
+    (signedAmount: number) => {
       const previous = dailyTotal
       const updatedAt = Date.now()
+      const adjustment = appendAdjustment(
+        storage,
+        dayKey,
+        signedAmount,
+        updatedAt,
+      )
+      if (signedIn && remote) {
+        queueLocalAdjustmentForSync(storage, dayKey, adjustment)
+        void flushOutboundAdjustments(storage, remote).catch(() => {
+          // Stay queued for later poll / reconnect.
+        })
+      }
+      const next = loadDailyTotal(storage, dayKey)
       setDailyTotal(next)
-      saveDailyTotal(storage, dayKey, next)
       setLastUpdated(updatedAt)
-      saveLastUpdated(storage, dayKey, updatedAt)
 
       const crossingDelay = fillThresholdCrossingDelayMs(
         previous,
@@ -153,8 +214,10 @@ export function useWaterLog(storage: Storage = localStorage) {
     [
       dailyTotal,
       dayKey,
+      remote,
       settings.maximumTarget,
       settings.minimumTarget,
+      signedIn,
       storage,
     ],
   )
@@ -162,17 +225,17 @@ export function useWaterLog(storage: Storage = localStorage) {
   const addAmount = useCallback(
     (amount: number) => {
       if (!Number.isInteger(amount) || amount <= 0) return
-      applyTotal(addToDailyTotal(dailyTotal, amount))
+      applyAdjustment(amount)
     },
-    [applyTotal, dailyTotal],
+    [applyAdjustment],
   )
 
   const removeAmount = useCallback(
     (amount: number) => {
       if (!Number.isInteger(amount) || amount <= 0) return
-      applyTotal(removeFromDailyTotal(dailyTotal, amount))
+      applyAdjustment(-amount)
     },
-    [applyTotal, dailyTotal],
+    [applyAdjustment],
   )
 
   const goBack = useCallback(() => {
@@ -211,5 +274,6 @@ export function useWaterLog(storage: Storage = localStorage) {
     goBack,
     goForward,
     updateSettings,
+    reloadDay,
   }
 }

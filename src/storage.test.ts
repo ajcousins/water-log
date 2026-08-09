@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from './domain'
 import {
+  appendAdjustment,
+  loadAdjustments,
   loadDailyTotal,
   loadLastUpdated,
   loadMinMetAt,
   loadSettings,
   clearMinMetAt,
-  saveDailyTotal,
-  saveLastUpdated,
+  migrateTotalsToAdjustments,
   saveMinMetAt,
   saveSettings,
 } from './storage'
@@ -56,21 +57,50 @@ describe('persistence', () => {
     expect(loadDailyTotal(memoryStorage(), '2026-07-30')).toBe(0)
   })
 
-  it('round-trips a Daily Total for a Day', () => {
+  it('records Adjustments and derives Daily Total as max(0, sum)', () => {
     const storage = memoryStorage()
-    saveDailyTotal(storage, '2026-07-30', 900)
-    expect(loadDailyTotal(storage, '2026-07-30')).toBe(900)
+    appendAdjustment(storage, '2026-07-30', 150, 1000)
+    appendAdjustment(storage, '2026-07-30', 400, 2000)
+    expect(loadDailyTotal(storage, '2026-07-30')).toBe(550)
+    expect(loadAdjustments(storage, '2026-07-30')).toHaveLength(2)
     expect(loadDailyTotal(storage, '2026-07-29')).toBe(0)
+  })
+
+  it('floors Daily Total at 0 when Adjustments sum negative', () => {
+    const storage = memoryStorage()
+    appendAdjustment(storage, '2026-07-30', 100, 1)
+    appendAdjustment(storage, '2026-07-30', -100, 2)
+    appendAdjustment(storage, '2026-07-30', -100, 3)
+    expect(loadDailyTotal(storage, '2026-07-30')).toBe(0)
+  })
+
+  it('migrates a legacy Daily Total into one Adjustment', () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'water-log:totals',
+      JSON.stringify({ '2026-07-30': 900 }),
+    )
+    storage.setItem(
+      'water-log:updated-at',
+      JSON.stringify({ '2026-07-30': 1_722_000_000_000 }),
+    )
+    migrateTotalsToAdjustments(storage)
+    expect(loadDailyTotal(storage, '2026-07-30')).toBe(900)
+    const adjustments = loadAdjustments(storage, '2026-07-30')
+    expect(adjustments).toHaveLength(1)
+    expect(adjustments[0]?.amount).toBe(900)
+    expect(adjustments[0]?.at).toBe(1_722_000_000_000)
   })
 
   it('treats a missing last-updated as null', () => {
     expect(loadLastUpdated(memoryStorage(), '2026-07-30')).toBeNull()
   })
 
-  it('round-trips a last-updated timestamp for a Day', () => {
+  it('uses the latest Adjustment time as last-updated', () => {
     const storage = memoryStorage()
-    saveLastUpdated(storage, '2026-07-30', 1_722_000_000_000)
-    expect(loadLastUpdated(storage, '2026-07-30')).toBe(1_722_000_000_000)
+    appendAdjustment(storage, '2026-07-30', 150, 1_000)
+    appendAdjustment(storage, '2026-07-30', 50, 5_000)
+    expect(loadLastUpdated(storage, '2026-07-30')).toBe(5_000)
     expect(loadLastUpdated(storage, '2026-07-29')).toBeNull()
   })
 

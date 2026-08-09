@@ -4,10 +4,10 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Small, Large, and Custom Add/Remove record Adjustments (not a replaced single total write)
-- [ ] Daily Total displayed and used for fireworks/fill is max(0, sum of Adjustments) for the selected Day
-- [ ] Adjustment list is not shown in the UI
-- [ ] Prior local Daily Totals migrate into an equivalent Adjustment (or equivalent sum) so existing users keep their numbers
-- [ ] Domain and local persistence tests cover sum/floor and persistence behaviour
+- [x] Small, Large, and Custom Add/Remove record Adjustments (not a replaced single total write)
+- [x] Daily Total displayed and used for fireworks/fill is max(0, sum of Adjustments) for the selected Day
+- [x] Adjustment list is not shown in the UI
+- [x] Prior local Daily Totals migrate into an equivalent Adjustment (or equivalent sum) so existing users keep their numbers
+- [x] Domain and local persistence tests cover sum/floor and persistence behaviour

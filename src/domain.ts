@@ -16,6 +16,19 @@ export type SettingsValidation =
   | { ok: true }
   | { ok: false; error: string }
 
+export type Adjustment = {
+  id: string
+  amount: number
+  at: number
+}
+
+export function dailyTotalFromAdjustments(
+  adjustments: readonly Pick<Adjustment, 'amount'>[],
+): number {
+  const sum = adjustments.reduce((total, adjustment) => total + adjustment.amount, 0)
+  return Math.max(0, sum)
+}
+
 export function addToDailyTotal(current: number, amount: number): number {
   return current + amount
 }
