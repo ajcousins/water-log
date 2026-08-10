@@ -7,7 +7,7 @@ import {
   createSupabaseClientFromEnv,
   createSupabaseRemoteWaterLog,
 } from './remote/supabaseRemote'
-import { applyRemoteWinsOnSignIn } from './sync/ownAdjustments'
+import { mergeAndBackfillOnSignIn } from './sync/ownAdjustments'
 import { useAccount } from './useAccount'
 import { useFollow } from './useFollow'
 import { useWaterLog } from './useWaterLog'
@@ -37,9 +37,13 @@ export default function App() {
   useEffect(() => {
     if (!remote) return
     if (signedIn && !wasSignedIn.current) {
-      void applyRemoteWinsOnSignIn(localStorage, remote).then(() => {
-        reloadDay()
-      })
+      void mergeAndBackfillOnSignIn(localStorage, remote)
+        .then(() => {
+          reloadDay()
+        })
+        .catch(() => {
+          reloadDay()
+        })
     }
     wasSignedIn.current = signedIn
   }, [remote, reloadDay, signedIn])

@@ -2,10 +2,10 @@ import type { Adjustment } from '../domain'
 import type { RemoteAdjustment, RemoteWaterLog } from '../remote/types'
 import {
   enqueueOutboundAdjustment,
+  loadAllAdjustments,
   loadOutboundAdjustments,
   mergeAdjustmentsById,
   removeOutboundAdjustment,
-  replaceDayAdjustments,
 } from '../storage'
 
 export const OWN_SYNC_POLL_MS = 30_000
@@ -42,21 +42,30 @@ export async function pullAndMergeAdjustments(
   )
 }
 
-/** On sign-in: remote replaces local Adjustments for overlapping Day keys. */
-export async function applyRemoteWinsOnSignIn(
+/**
+ * On sign-in / session restore: merge remote by id, then upload any local-only
+ * Adjustments (prior anonymous history and unsynced offline taps).
+ */
+export async function mergeAndBackfillOnSignIn(
   storage: Storage,
   remote: RemoteWaterLog,
 ): Promise<void> {
   const remoteRows = await remote.pullAdjustments()
-  const byDay = new Map<string, Adjustment[]>()
-  for (const row of remoteRows) {
-    const list = byDay.get(row.dayKey) ?? []
-    list.push({ id: row.id, amount: row.amount, at: row.at })
-    byDay.set(row.dayKey, list)
+  const remoteIds = new Set(remoteRows.map((row) => row.id))
+  mergeAdjustmentsById(
+    storage,
+    remoteRows.map((row) => ({
+      id: row.id,
+      dayKey: row.dayKey,
+      amount: row.amount,
+      at: row.at,
+    })),
+  )
+  for (const adjustment of loadAllAdjustments(storage)) {
+    if (remoteIds.has(adjustment.id)) continue
+    enqueueOutboundAdjustment(storage, adjustment.dayKey, adjustment)
   }
-  for (const [dayKey, adjustments] of byDay) {
-    replaceDayAdjustments(storage, dayKey, adjustments)
-  }
+  await flushOutboundAdjustments(storage, remote)
 }
 
 export function queueLocalAdjustmentForSync(

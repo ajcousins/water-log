@@ -6,8 +6,8 @@ import {
   loadOutboundAdjustments,
 } from '../storage'
 import {
-  applyRemoteWinsOnSignIn,
   flushOutboundAdjustments,
+  mergeAndBackfillOnSignIn,
   pullAndMergeAdjustments,
   queueLocalAdjustmentForSync,
 } from './ownAdjustments'
@@ -73,18 +73,56 @@ describe('own Adjustment sync', () => {
     expect(loadDailyTotal(storage, '2026-08-09')).toBe(550)
   })
 
-  it('on sign-in, remote wins for overlapping Days', async () => {
+  it('on sign-in, merges overlapping Days and uploads anonymous history', async () => {
     const storage = memoryStorage()
-    appendAdjustment(storage, '2026-08-09', 999, 1)
+    const anonymous = appendAdjustment(storage, '2026-08-09', 1600, 1)
     const remote = createFakeRemoteWaterLog()
     await remote.signUp('alice', 'secret1')
     await remote.pushAdjustment({
       id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       dayKey: '2026-08-09',
-      amount: 200,
+      amount: 250,
       at: 5,
     })
-    await applyRemoteWinsOnSignIn(storage, remote)
-    expect(loadDailyTotal(storage, '2026-08-09')).toBe(200)
+
+    await mergeAndBackfillOnSignIn(storage, remote)
+
+    expect(loadDailyTotal(storage, '2026-08-09')).toBe(1850)
+    expect(loadOutboundAdjustments(storage)).toHaveLength(0)
+    expect(await remote.pullAdjustments()).toEqual(
+      expect.arrayContaining([
+        {
+          id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+          dayKey: '2026-08-09',
+          amount: 250,
+          at: 5,
+        },
+        {
+          id: anonymous.id,
+          dayKey: '2026-08-09',
+          amount: 1600,
+          at: 1,
+        },
+      ]),
+    )
+  })
+
+  it('on sign-up with empty remote, uploads prior anonymous Adjustments', async () => {
+    const storage = memoryStorage()
+    const first = appendAdjustment(storage, '2026-08-08', 400, 10)
+    const second = appendAdjustment(storage, '2026-08-09', 1200, 20)
+    const remote = createFakeRemoteWaterLog()
+    await remote.signUp('bob', 'secret1')
+
+    await mergeAndBackfillOnSignIn(storage, remote)
+
+    expect(loadDailyTotal(storage, '2026-08-08')).toBe(400)
+    expect(loadDailyTotal(storage, '2026-08-09')).toBe(1200)
+    expect(await remote.pullAdjustments()).toEqual(
+      expect.arrayContaining([
+        { id: first.id, dayKey: '2026-08-08', amount: 400, at: 10 },
+        { id: second.id, dayKey: '2026-08-09', amount: 1200, at: 20 },
+      ]),
+    )
   })
 })

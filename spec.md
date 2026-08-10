@@ -117,7 +117,7 @@ Navigating to a Day that is already at or above the Minimum Target does not fire
 ## Persistence and sync
 
 - **Anonymous:** Settings and Adjustments (Daily Totals derived) in browser local storage. Missing Days are 0 ml until water is added.
-- **Signed in:** Adjustments sync via Supabase across the user’s devices; ~30s pull while the app is open. Offline: update UI immediately and queue sync. Creating an Account does not upload prior anonymous history. On sign-in, remote replaces overlapping anonymous local Days. On sign-out, keep local numbers as anonymous; drop session and Follow Vessel.
+- **Signed in:** Adjustments sync via Supabase across the user’s devices; ~30s pull while the app is open. Offline: update UI immediately and queue sync. Creating an Account (or signing in) uploads prior anonymous local Adjustments and merges them with remote by Adjustment id. On sign-out, keep local numbers as anonymous; drop session and Follow Vessel.
 - Published Daily Totals are readable only by users with an accepted Follow.
 
 ## Out of scope
@@ -127,7 +127,6 @@ Navigating to a Day that is already at or above the Minimum Target does not fire
 - Push notifications
 - Multiple Follow Vessels / following more than one person at a time
 - Syncing Settings across devices
-- Uploading anonymous history on Account creation
 - Reminders / notifications (aside from in-app Follow Request modals)
 - Units other than millilitres
 - Visible Adjustment / drink history

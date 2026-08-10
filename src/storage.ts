@@ -128,6 +128,22 @@ export function loadAdjustments(storage: Storage, dayKey: string): Adjustment[] 
   return Array.isArray(list) ? list : []
 }
 
+/** All local Adjustments across Days, each tagged with its dayKey. */
+export function loadAllAdjustments(
+  storage: Storage,
+): Array<Adjustment & { dayKey: string }> {
+  migrateTotalsToAdjustments(storage)
+  const map = loadAdjustmentsMap(storage)
+  const result: Array<Adjustment & { dayKey: string }> = []
+  for (const [dayKey, list] of Object.entries(map)) {
+    if (!Array.isArray(list)) continue
+    for (const adjustment of list) {
+      result.push({ ...adjustment, dayKey })
+    }
+  }
+  return result
+}
+
 export function appendAdjustment(
   storage: Storage,
   dayKey: string,
