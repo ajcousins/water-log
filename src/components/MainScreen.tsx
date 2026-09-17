@@ -86,8 +86,8 @@ export function MainScreen({
         />
       </main>
 
-      <footer className="-mx-5 mt-4 overflow-x-auto px-5">
-        <div className="flex w-max min-w-full items-center justify-start gap-5">
+      <footer className="-mx-5 mt-4 overflow-x-auto overflow-y-hidden overscroll-x-contain px-5 scrollbar-none">
+        <div className="flex w-max min-w-full items-center justify-start gap-5 py-1">
           {settings.presets.map((preset) => (
             <FillButton
               key={preset.label}
