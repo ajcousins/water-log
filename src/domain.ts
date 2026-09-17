@@ -10,7 +10,7 @@ export type Settings = {
 }
 
 export const MAX_PRESETS = 8
-export const MAX_PRESET_LABEL_LENGTH = 20
+export const MAX_PRESET_LABEL_LENGTH = 18
 export const NEW_PRESET_AMOUNT = 200
 
 export const DEFAULT_SETTINGS: Settings = {

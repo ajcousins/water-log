@@ -21,7 +21,7 @@ The user’s global preferences: Minimum Target, Maximum Target, and an ordered 
 _Avoid_: profile, preferences snapshot, per-day config
 
 **Preset**:
-A user-named whole-millilitre amount that records a positive Adjustment in one tap. Defaults are two Presets labeled “Small” (150 ml) and “Large” (400 ml); a newly added Preset starts as “Preset” (or “Preset N” if needed for uniqueness) at 200 ml. Labels are unique (case-sensitive), non-empty, and at most 20 characters; amounts are whole millilitres greater than 0 (duplicate amounts across Presets are allowed). A user may have at most 8 Presets; any may be deleted so long as at least one remains. Order in Settings is the order they appear for tapping. Presets never Remove.
+A user-named whole-millilitre amount that records a positive Adjustment in one tap. Defaults are two Presets labeled “Small” (150 ml) and “Large” (400 ml); a newly added Preset starts as “Preset” (or “Preset N” if needed for uniqueness) at 200 ml. Labels are unique (case-sensitive), non-empty, and at most 18 characters; amounts are whole millilitres greater than 0 (duplicate amounts across Presets are allowed). A user may have at most 8 Presets; any may be deleted so long as at least one remains. Order in Settings is the order they appear for tapping. Presets never Remove.
 _Avoid_: Small / Large (as fixed types), quick add, sip size, shortcut
 
 **Minimum Target**:

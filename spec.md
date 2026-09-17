@@ -88,7 +88,7 @@ The user can edit:
 | Maximum Target | 2500 ml |
 | Presets | “Small” 150 ml, “Large” 400 ml |
 
-**Presets:** editable label and amount; add (seed “Preset” / “Preset N” at 200 ml; disabled at 8); delete (disabled at 1); reorder with up/down. Labels must be unique (case-sensitive), non-empty, ≤20 characters. Amounts are whole millilitres > 0 (duplicate amounts allowed).
+**Presets:** editable label and amount; add (seed “Preset” / “Preset N” at 200 ml; disabled at 8); delete (disabled at 1); reorder with up/down. Labels must be unique (case-sensitive), non-empty, ≤18 characters. Amounts are whole millilitres > 0 (duplicate amounts allowed).
 
 Validation: saving is blocked with an error unless **Minimum Target < Maximum Target** and all Preset rules above hold.
 

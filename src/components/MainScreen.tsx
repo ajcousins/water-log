@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { HiOutlineCog6Tooth } from 'react-icons/hi2'
-import type { Settings } from '../domain'
+import { MAX_PRESET_LABEL_LENGTH, type Settings } from '../domain'
 import { CustomModal } from './CustomModal'
 import { Fireworks } from './Fireworks'
 import { Vessel, type FollowVesselView } from './Vessel'
@@ -37,6 +37,8 @@ export function MainScreen({
   onRemove,
 }: MainScreenProps) {
   const [customOpen, setCustomOpen] = useState(false)
+  const fillCount = settings.presets.length + 1
+  const centerFills = fillCount <= 3
 
   return (
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-8 pt-5">
@@ -87,7 +89,11 @@ export function MainScreen({
       </main>
 
       <footer className="-mx-5 mt-4 overflow-x-auto overflow-y-hidden overscroll-x-contain px-5 scrollbar-none">
-        <div className="flex w-max min-w-full items-center justify-start gap-5 py-1">
+        <div
+          className={`flex w-max min-w-full items-center gap-5 ${
+            centerFills ? 'justify-center' : 'justify-start'
+          }`}
+        >
           {settings.presets.map((preset) => (
             <FillButton
               key={preset.label}
@@ -99,7 +105,7 @@ export function MainScreen({
           <button
             type="button"
             onClick={() => setCustomOpen(true)}
-            className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-full bg-[var(--pool-deep)] text-white shadow-lg shadow-[rgba(14,90,117,0.25)] transition active:scale-95"
+            className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-full bg-[var(--pool-deep)] text-white transition active:scale-95"
           >
             <span className="text-sm font-semibold">Custom</span>
           </button>
@@ -125,13 +131,20 @@ function FillButton({
   amount: number
   onClick: () => void
 }) {
+  const displayLabel =
+    label.length > MAX_PRESET_LABEL_LENGTH
+      ? `${label.slice(0, MAX_PRESET_LABEL_LENGTH)}…`
+      : label
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-full bg-[var(--pool)] text-white shadow-lg shadow-[rgba(26,122,156,0.28)] transition active:scale-95"
+      className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-full bg-[var(--pool)] text-white transition active:scale-95"
     >
-      <span className="max-w-full truncate px-1 text-sm font-semibold">{label}</span>
+      <span className="max-w-full px-1 text-center text-sm leading-tight font-semibold wrap-break-word whitespace-normal">
+        {displayLabel}
+      </span>
       <span className="text-[0.7rem] opacity-80">{amount} ml</span>
     </button>
   )

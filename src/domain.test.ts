@@ -170,15 +170,15 @@ describe('Settings', () => {
     ).toEqual({ ok: false, error: 'Preset labels cannot be empty' })
   })
 
-  it('rejects Preset labels longer than 20 characters', () => {
+  it('rejects Preset labels longer than 18 characters', () => {
     expect(
       validateSettings({
         ...DEFAULT_SETTINGS,
-        presets: [{ label: 'abcdefghijklmnopqrstu', amount: 150 }],
+        presets: [{ label: 'abcdefghijklmnopqrs', amount: 150 }],
       }),
     ).toEqual({
       ok: false,
-      error: 'Preset labels must be at most 20 characters',
+      error: 'Preset labels must be at most 18 characters',
     })
   })
 

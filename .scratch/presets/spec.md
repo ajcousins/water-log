@@ -17,7 +17,7 @@ Settings holds an ordered list of **Presets** (editable label + amount). Default
 3. As a user, I want to change a Preset’s millilitre amount in Settings, so that one tap adds the volume I actually drink.
 4. As a user, I want to add a new Preset in Settings, so that I can one-tap sizes beyond the two defaults.
 5. As a user, I want a newly added Preset to start with a usable label and amount, so that I can save without filling a blank form.
-6. As a user, I want Preset labels to be unique and non-empty (max 20 characters), so that buttons stay distinguishable and readable.
+6. As a user, I want Preset labels to be unique and non-empty (max 18 characters), so that buttons stay distinguishable and readable.
 7. As a user, I want Preset amounts to be whole millilitres greater than 0, so that taps always add a real volume.
 8. As a user, I want two Presets to be allowed the same millilitre amount under different labels, so that I can name the same volume in different contexts.
 9. As a user, I want to delete a Preset I no longer use, so that the fill row stays tidy.
@@ -40,12 +40,12 @@ Settings holds an ordered list of **Presets** (editable label + amount). Default
 - Persist Settings as Minimum Target, Maximum Target, and an ordered `presets` list (`label` + `amount`). See [ADR 0004](../../docs/adr/0004-presets-replace-small-large.md).
 - Default Presets: `{ label: "Small", amount: 150 }`, `{ label: "Large", amount: 400 }`.
 - New Preset seed: label `"Preset"` or `"Preset N"` for uniqueness; amount `200`.
-- Validation on save: Minimum Target < Maximum Target; 1–8 Presets; each label unique (case-sensitive), trimmed non-empty, ≤20 characters; each amount a whole millilitre > 0.
+- Validation on save: Minimum Target < Maximum Target; 1–8 Presets; each label unique (case-sensitive), trimmed non-empty, ≤18 characters; each amount a whole millilitre > 0.
 - Legacy load: if `presets` absent but `small`/`large` present, migrate to two Presets with those amounts and labels “Small”/“Large”, then persist the new shape; if `presets` present, it wins; corrupt/missing → defaults.
 - Main fill row: Presets in order, then Custom last; single horizontally scrollable strip; initial scroll offset left.
 - At 8 Presets, disable add (with a short hint); at 1 Preset, disable delete.
 - Reorder via up/down controls in Settings (no drag-and-drop required for MVP).
-- Long labels may truncate with ellipsis on the circular main-screen button; Settings enforces the 20-character max.
+- Long labels may truncate with ellipsis on the circular main-screen button; Settings enforces the 18-character max.
 - Settings remain device-local and unsynced.
 - Domain vocabulary: [CONTEXT.md](../../CONTEXT.md).
 
@@ -64,7 +64,7 @@ Settings holds an ordered list of **Presets** (editable label + amount). Default
 - Negative / Remove Presets
 - Drag-and-drop reorder
 - More than 8 Presets
-- Labels longer than 20 characters
+- Labels longer than 18 characters
 - Changing Custom into a Preset
 - Units other than millilitres
 
