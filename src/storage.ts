@@ -2,6 +2,7 @@ import {
   dailyTotalFromAdjustments,
   DEFAULT_SETTINGS,
   type Adjustment,
+  type Preset,
   type Settings,
 } from './domain'
 
@@ -17,19 +18,74 @@ type TotalsMap = Record<string, number>
 type AdjustmentsMap = Record<string, Adjustment[]>
 type TimestampMap = Record<string, number>
 
+type LegacySettingsJson = {
+  minimumTarget?: unknown
+  maximumTarget?: unknown
+  presets?: unknown
+  small?: unknown
+  large?: unknown
+}
+
+function cloneDefaultSettings(): Settings {
+  return {
+    minimumTarget: DEFAULT_SETTINGS.minimumTarget,
+    maximumTarget: DEFAULT_SETTINGS.maximumTarget,
+    presets: DEFAULT_SETTINGS.presets.map((preset) => ({ ...preset })),
+  }
+}
+
+function parsePresetList(value: unknown): Preset[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null
+  const presets: Preset[] = []
+  for (const item of value) {
+    if (!item || typeof item !== 'object') return null
+    const record = item as { label?: unknown; amount?: unknown }
+    const label = typeof record.label === 'string' ? record.label : ''
+    const amount = Number(record.amount)
+    if (!Number.isInteger(amount) || amount <= 0) return null
+    presets.push({ label, amount })
+  }
+  return presets
+}
+
 export function loadSettings(storage: Storage): Settings {
   const raw = storage.getItem(SETTINGS_KEY)
-  if (!raw) return { ...DEFAULT_SETTINGS }
+  if (!raw) return cloneDefaultSettings()
   try {
-    const parsed = JSON.parse(raw) as Partial<Settings>
-    return {
-      minimumTarget: Number(parsed.minimumTarget) || DEFAULT_SETTINGS.minimumTarget,
-      maximumTarget: Number(parsed.maximumTarget) || DEFAULT_SETTINGS.maximumTarget,
-      small: Number(parsed.small) || DEFAULT_SETTINGS.small,
-      large: Number(parsed.large) || DEFAULT_SETTINGS.large,
+    const parsed = JSON.parse(raw) as LegacySettingsJson
+    const minimumTarget =
+      Number(parsed.minimumTarget) || DEFAULT_SETTINGS.minimumTarget
+    const maximumTarget =
+      Number(parsed.maximumTarget) || DEFAULT_SETTINGS.maximumTarget
+
+    const fromList = parsePresetList(parsed.presets)
+    if (fromList) {
+      return { minimumTarget, maximumTarget, presets: fromList }
     }
+
+    const small = Number(parsed.small)
+    const large = Number(parsed.large)
+    if (
+      Number.isInteger(small) &&
+      small > 0 &&
+      Number.isInteger(large) &&
+      large > 0
+    ) {
+      const migrated: Settings = {
+        minimumTarget,
+        maximumTarget,
+        presets: [
+          { label: 'Small', amount: small },
+          { label: 'Large', amount: large },
+        ],
+      }
+      saveSettings(storage, migrated)
+      return migrated
+    }
+
+    return cloneDefaultSettings()
   } catch {
-    return { ...DEFAULT_SETTINGS }
+    return cloneDefaultSettings()
   }
 }
 

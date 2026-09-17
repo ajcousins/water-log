@@ -47,10 +47,61 @@ describe('persistence', () => {
     const settings = {
       ...DEFAULT_SETTINGS,
       minimumTarget: 1800,
-      small: 200,
+      presets: [
+        { label: 'Small', amount: 200 },
+        { label: 'Large', amount: 400 },
+      ],
     }
     saveSettings(storage, settings)
     expect(loadSettings(storage)).toEqual(settings)
+  })
+
+  it('migrates legacy small/large Settings into Presets', () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'water-log:settings',
+      JSON.stringify({
+        minimumTarget: 1600,
+        maximumTarget: 2600,
+        small: 175,
+        large: 450,
+      }),
+    )
+    expect(loadSettings(storage)).toEqual({
+      minimumTarget: 1600,
+      maximumTarget: 2600,
+      presets: [
+        { label: 'Small', amount: 175 },
+        { label: 'Large', amount: 450 },
+      ],
+    })
+    expect(JSON.parse(storage.getItem('water-log:settings')!)).toEqual({
+      minimumTarget: 1600,
+      maximumTarget: 2600,
+      presets: [
+        { label: 'Small', amount: 175 },
+        { label: 'Large', amount: 450 },
+      ],
+    })
+  })
+
+  it('prefers an existing presets list over legacy small/large', () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'water-log:settings',
+      JSON.stringify({
+        minimumTarget: 1500,
+        maximumTarget: 2500,
+        small: 99,
+        large: 99,
+        presets: [{ label: 'Bottle', amount: 500 }],
+      }),
+    )
+    expect(loadSettings(storage)).toEqual({
+      minimumTarget: 1500,
+      maximumTarget: 2500,
+      presets: [{ label: 'Bottle', amount: 500 }],
+    })
   })
 
   it('treats a missing Day as 0 ml', () => {

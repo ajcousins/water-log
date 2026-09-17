@@ -2,7 +2,7 @@
 
 A simple, lightweight, mobile-first web application that helps a user track their daily water intake. Anonymous local use works on one device; an optional **Account** enables multi-device Adjustment sync and **Follow** so one other person’s level can appear on the Vessel.
 
-Domain vocabulary lives in [CONTEXT.md](CONTEXT.md). Architectural decisions live in [docs/adr/](docs/adr/). Feature PRD: [.scratch/follow-and-sync/spec.md](.scratch/follow-and-sync/spec.md).
+Domain vocabulary lives in [CONTEXT.md](CONTEXT.md). Architectural decisions live in [docs/adr/](docs/adr/). Feature PRDs: [.scratch/follow-and-sync/spec.md](.scratch/follow-and-sync/spec.md), [.scratch/presets/spec.md](.scratch/presets/spec.md).
 
 ## Stack
 
@@ -15,7 +15,7 @@ Domain vocabulary lives in [CONTEXT.md](CONTEXT.md). Architectural decisions liv
 
 - A **Day** is the device’s local calendar date.
 - Each Day’s **Daily Total** is max(0, sum of that Day’s **Adjustments**) in whole millilitres. Adjustments are not shown as a list; the UI shows only the Daily Total. See [ADR 0003](docs/adr/0003-sync-adjustments-expose-daily-totals.md).
-- **Settings** are global on the device: **Minimum Target**, **Maximum Target**, **Small** amount, and **Large** amount. The same Settings apply when viewing any Day. Settings are not synced across devices.
+- **Settings** are global on the device: **Minimum Target**, **Maximum Target**, and an ordered list of **Presets**. The same Settings apply when viewing any Day. Settings are not synced across devices. See [ADR 0004](docs/adr/0004-presets-replace-small-large.md).
 - The **Vessel** is the visual representation of the Daily Total from 0 up to the Maximum Target.
 - An **Account** (username + password) is optional. Without one, data stays local only.
 - A **Follow** is a one-way, consented relationship: the follower may show the followed user’s level on their Vessel (at most one active Follow in MVP).
@@ -29,7 +29,7 @@ All amounts in the app are whole millilitres only (positive integers where an am
 - At the top of the page, show the selected Day’s date in the form `Thu, 30 Jul 2026`.
 - A triangle arrow to the left navigates one Day backward. Back-navigation is unlimited: empty Days (no stored total) display as 0 ml until the user adds water.
 - A triangle arrow to the right navigates one Day forward. It is disabled when the selected Day is today, so the user cannot navigate into the future.
-- Past Days are writable: Small, Large, and Custom adjust that Day the same way as today.
+- Past Days are writable: Presets and Custom adjust that Day the same way as today.
 
 ### Total display
 
@@ -60,11 +60,10 @@ When the user has an accepted Follow, show a **Follow Vessel** to the left of th
 
 ### Fill controls
 
-Three circular buttons at the bottom of the page:
+A horizontally scrollable row of circular buttons at the bottom of the page (starts scrolled to the left):
 
-- **Small** — records a positive Adjustment of the configured Small amount for the selected Day.
-- **Large** — records a positive Adjustment of the configured Large amount for the selected Day.
-- **Custom** — opens the Custom adjust modal (see below).
+- One button per **Preset**, in Settings order — each records a positive Adjustment of that Preset’s amount for the selected Day.
+- **Custom** — always the right-most control; opens the Custom adjust modal (see below).
 
 ### Settings entry
 
@@ -87,12 +86,13 @@ The user can edit:
 | --- | --- |
 | Minimum Target | 1500 ml |
 | Maximum Target | 2500 ml |
-| Small | 150 ml |
-| Large | 400 ml |
+| Presets | “Small” 150 ml, “Large” 400 ml |
 
-Validation: saving is blocked with an error unless **Minimum Target < Maximum Target**.
+**Presets:** editable label and amount; add (seed “Preset” / “Preset N” at 200 ml; disabled at 8); delete (disabled at 1); reorder with up/down. Labels must be unique (case-sensitive), non-empty, ≤20 characters. Amounts are whole millilitres > 0 (duplicate amounts allowed).
 
-Changing Settings updates the Vessel marks for every Day immediately (including past Days). Historical Daily Totals are not re-keyed or snapshotted against old targets. See [ADR 0001](docs/adr/0001-global-settings-across-days.md).
+Validation: saving is blocked with an error unless **Minimum Target < Maximum Target** and all Preset rules above hold.
+
+Changing Settings updates the Vessel marks for every Day immediately (including past Days). Historical Daily Totals are not re-keyed or snapshotted against old targets. See [ADR 0001](docs/adr/0001-global-settings-across-days.md). Legacy `small`/`large` Settings migrate into the default two Presets on load — see [ADR 0004](docs/adr/0004-presets-replace-small-large.md).
 
 ### Account and Follow (Settings)
 

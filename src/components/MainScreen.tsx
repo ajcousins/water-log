@@ -86,16 +86,24 @@ export function MainScreen({
         />
       </main>
 
-      <footer className="mt-4 flex items-center justify-center gap-5">
-        <FillButton label="Small" amount={settings.small} onClick={() => onAdd(settings.small)} />
-        <FillButton label="Large" amount={settings.large} onClick={() => onAdd(settings.large)} />
-        <button
-          type="button"
-          onClick={() => setCustomOpen(true)}
-          className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-[var(--pool-deep)] text-white shadow-lg shadow-[rgba(14,90,117,0.25)] transition active:scale-95"
-        >
-          <span className="text-sm font-semibold">Custom</span>
-        </button>
+      <footer className="-mx-5 mt-4 overflow-x-auto px-5">
+        <div className="flex w-max min-w-full items-center justify-center gap-5">
+          {settings.presets.map((preset) => (
+            <FillButton
+              key={preset.label}
+              label={preset.label}
+              amount={preset.amount}
+              onClick={() => onAdd(preset.amount)}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => setCustomOpen(true)}
+            className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-full bg-[var(--pool-deep)] text-white shadow-lg shadow-[rgba(14,90,117,0.25)] transition active:scale-95"
+          >
+            <span className="text-sm font-semibold">Custom</span>
+          </button>
+        </div>
       </footer>
 
       <CustomModal
@@ -121,9 +129,9 @@ function FillButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-[var(--pool)] text-white shadow-lg shadow-[rgba(26,122,156,0.28)] transition active:scale-95"
+      className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-full bg-[var(--pool)] text-white shadow-lg shadow-[rgba(26,122,156,0.28)] transition active:scale-95"
     >
-      <span className="text-sm font-semibold">{label}</span>
+      <span className="max-w-full truncate px-1 text-sm font-semibold">{label}</span>
       <span className="text-[0.7rem] opacity-80">{amount} ml</span>
     </button>
   )

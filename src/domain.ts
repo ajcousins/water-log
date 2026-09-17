@@ -1,15 +1,25 @@
+export type Preset = {
+  label: string
+  amount: number
+}
+
 export type Settings = {
   minimumTarget: number
   maximumTarget: number
-  small: number
-  large: number
+  presets: Preset[]
 }
+
+export const MAX_PRESETS = 8
+export const MAX_PRESET_LABEL_LENGTH = 20
+export const NEW_PRESET_AMOUNT = 200
 
 export const DEFAULT_SETTINGS: Settings = {
   minimumTarget: 1500,
   maximumTarget: 2500,
-  small: 150,
-  large: 400,
+  presets: [
+    { label: 'Small', amount: 150 },
+    { label: 'Large', amount: 400 },
+  ],
 }
 
 export type SettingsValidation =
@@ -106,7 +116,72 @@ export function validateSettings(settings: Settings): SettingsValidation {
       error: 'Minimum Target must be less than Maximum Target',
     }
   }
+
+  const presets = settings.presets
+  if (presets.length < 1 || presets.length > MAX_PRESETS) {
+    return {
+      ok: false,
+      error: `You must have between 1 and ${MAX_PRESETS} Presets`,
+    }
+  }
+
+  const seen = new Set<string>()
+  for (const preset of presets) {
+    const label = preset.label.trim()
+    if (label.length === 0) {
+      return { ok: false, error: 'Preset labels cannot be empty' }
+    }
+    if (label.length > MAX_PRESET_LABEL_LENGTH) {
+      return {
+        ok: false,
+        error: `Preset labels must be at most ${MAX_PRESET_LABEL_LENGTH} characters`,
+      }
+    }
+    if (seen.has(label)) {
+      return { ok: false, error: 'Preset labels must be unique' }
+    }
+    seen.add(label)
+
+    if (!Number.isInteger(preset.amount) || preset.amount <= 0) {
+      return {
+        ok: false,
+        error: 'Preset amounts must be whole millilitres greater than 0',
+      }
+    }
+  }
+
   return { ok: true }
+}
+
+/** Next unique seed label for a new Preset (“Preset”, then “Preset 2”, …). */
+export function nextPresetLabel(
+  existing: readonly Pick<Preset, 'label'>[],
+): string {
+  const labels = new Set(existing.map((preset) => preset.label.trim()))
+  if (!labels.has('Preset')) return 'Preset'
+  let n = 2
+  while (labels.has(`Preset ${n}`)) n += 1
+  return `Preset ${n}`
+}
+
+export function seedNewPreset(
+  existing: readonly Pick<Preset, 'label'>[],
+): Preset {
+  return { label: nextPresetLabel(existing), amount: NEW_PRESET_AMOUNT }
+}
+
+export function movePreset(
+  presets: readonly Preset[],
+  index: number,
+  direction: -1 | 1,
+): Preset[] {
+  const target = index + direction
+  if (index < 0 || index >= presets.length) return [...presets]
+  if (target < 0 || target >= presets.length) return [...presets]
+  const next = [...presets]
+  const [item] = next.splice(index, 1)
+  next.splice(target, 0, item!)
+  return next
 }
 
 export function vesselFillRatio(

@@ -11,7 +11,9 @@ import {
   formatClockTime,
   formatDayLabel,
   isToday,
+  movePreset,
   removeFromDailyTotal,
+  seedNewPreset,
   shiftDay,
   shouldFireFireworks,
   toDayKey,
@@ -108,6 +110,13 @@ describe('fillThresholdCrossingDelayMs', () => {
 })
 
 describe('Settings', () => {
+  it('defaults to Small and Large Presets', () => {
+    expect(DEFAULT_SETTINGS.presets).toEqual([
+      { label: 'Small', amount: 150 },
+      { label: 'Large', amount: 400 },
+    ])
+  })
+
   it('accepts defaults where Minimum Target is below Maximum Target', () => {
     expect(validateSettings(DEFAULT_SETTINGS)).toEqual({ ok: true })
   })
@@ -130,6 +139,109 @@ describe('Settings', () => {
         maximumTarget: 1500,
       }),
     ).toEqual({ ok: false, error: 'Minimum Target must be less than Maximum Target' })
+  })
+
+  it('rejects an empty Preset list', () => {
+    expect(
+      validateSettings({ ...DEFAULT_SETTINGS, presets: [] }),
+    ).toEqual({
+      ok: false,
+      error: 'You must have between 1 and 8 Presets',
+    })
+  })
+
+  it('rejects more than 8 Presets', () => {
+    const presets = Array.from({ length: 9 }, (_, i) => ({
+      label: `P${i}`,
+      amount: 100,
+    }))
+    expect(validateSettings({ ...DEFAULT_SETTINGS, presets })).toEqual({
+      ok: false,
+      error: 'You must have between 1 and 8 Presets',
+    })
+  })
+
+  it('rejects empty or whitespace Preset labels', () => {
+    expect(
+      validateSettings({
+        ...DEFAULT_SETTINGS,
+        presets: [{ label: '  ', amount: 150 }],
+      }),
+    ).toEqual({ ok: false, error: 'Preset labels cannot be empty' })
+  })
+
+  it('rejects Preset labels longer than 20 characters', () => {
+    expect(
+      validateSettings({
+        ...DEFAULT_SETTINGS,
+        presets: [{ label: 'abcdefghijklmnopqrstu', amount: 150 }],
+      }),
+    ).toEqual({
+      ok: false,
+      error: 'Preset labels must be at most 20 characters',
+    })
+  })
+
+  it('rejects duplicate Preset labels (case-sensitive)', () => {
+    expect(
+      validateSettings({
+        ...DEFAULT_SETTINGS,
+        presets: [
+          { label: 'Cup', amount: 150 },
+          { label: 'Cup', amount: 300 },
+        ],
+      }),
+    ).toEqual({ ok: false, error: 'Preset labels must be unique' })
+  })
+
+  it('allows the same amount under different labels', () => {
+    expect(
+      validateSettings({
+        ...DEFAULT_SETTINGS,
+        presets: [
+          { label: 'Gym', amount: 300 },
+          { label: 'Mug', amount: 300 },
+        ],
+      }),
+    ).toEqual({ ok: true })
+  })
+
+  it('rejects non-positive Preset amounts', () => {
+    expect(
+      validateSettings({
+        ...DEFAULT_SETTINGS,
+        presets: [{ label: 'Sip', amount: 0 }],
+      }),
+    ).toEqual({
+      ok: false,
+      error: 'Preset amounts must be whole millilitres greater than 0',
+    })
+  })
+
+  it('seeds a new Preset label and 200 ml amount', () => {
+    expect(seedNewPreset([])).toEqual({ label: 'Preset', amount: 200 })
+    expect(seedNewPreset([{ label: 'Preset' }])).toEqual({
+      label: 'Preset 2',
+      amount: 200,
+    })
+    expect(
+      seedNewPreset([{ label: 'Preset' }, { label: 'Preset 2' }]),
+    ).toEqual({ label: 'Preset 3', amount: 200 })
+  })
+
+  it('moves a Preset up or down within the list', () => {
+    const presets = [
+      { label: 'A', amount: 1 },
+      { label: 'B', amount: 2 },
+      { label: 'C', amount: 3 },
+    ]
+    expect(movePreset(presets, 1, -1)).toEqual([
+      { label: 'B', amount: 2 },
+      { label: 'A', amount: 1 },
+      { label: 'C', amount: 3 },
+    ])
+    expect(movePreset(presets, 0, -1)).toEqual(presets)
+    expect(movePreset(presets, 2, 1)).toEqual(presets)
   })
 })
 

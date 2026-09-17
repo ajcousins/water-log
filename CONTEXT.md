@@ -13,12 +13,16 @@ The displayed amount of water for one Day, in whole millilitres — max(0, sum o
 _Avoid_: intake log, sip, entry, history of adds (as something the user browses)
 
 **Adjustment**:
-A signed whole-millilitre change recorded against a Day (from Small, Large, or Custom Add/Remove). Adjustments are the unit that syncs across devices and merges by accumulation; they are not shown in the UI. When signed in but offline, the Vessel updates from the local Adjustment immediately and the sync is queued until the device is back online.
+A signed whole-millilitre change recorded against a Day (from a Preset or Custom Add/Remove). Adjustments are the unit that syncs across devices and merges by accumulation; they are not shown in the UI. When signed in but offline, the Vessel updates from the local Adjustment immediately and the sync is queued until the device is back online.
 _Avoid_: drink, sip, entry, event, delta (as user-facing language)
 
 **Settings**:
-The user’s global preferences: Minimum Target, Maximum Target, Small amount, and Large amount. One set applies to every Day.
+The user’s global preferences: Minimum Target, Maximum Target, and an ordered list of Presets. One set applies to every Day.
 _Avoid_: profile, preferences snapshot, per-day config
+
+**Preset**:
+A user-named whole-millilitre amount that records a positive Adjustment in one tap. Defaults are two Presets labeled “Small” (150 ml) and “Large” (400 ml); a newly added Preset starts as “Preset” (or “Preset N” if needed for uniqueness) at 200 ml. Labels are unique (case-sensitive), non-empty, and at most 20 characters; amounts are whole millilitres greater than 0 (duplicate amounts across Presets are allowed). A user may have at most 8 Presets; any may be deleted so long as at least one remains. Order in Settings is the order they appear for tapping. Presets never Remove.
+_Avoid_: Small / Large (as fixed types), quick add, sip size, shortcut
 
 **Minimum Target**:
 The lower daily goal amount in whole millilitres. Reaching or passing it (via an increase) is the celebration threshold.
@@ -32,16 +36,8 @@ _Avoid_: cap, limit, hard maximum, max goal
 The on-screen vertical representation of the Daily Total from empty (0) up to the Maximum Target.
 _Avoid_: progress bar, glass, gauge, chart
 
-**Small**:
-A configured whole-millilitre amount that increases the Daily Total in one tap.
-_Avoid_: sip size, quick add (alone)
-
-**Large**:
-A configured whole-millilitre amount that increases the Daily Total in one tap, larger than Small.
-_Avoid_: big sip, quick add (alone)
-
 **Custom**:
-An adjustment where the user enters a whole-millilitre amount and chooses to Add or Remove it from the Daily Total.
+An adjustment where the user enters a whole-millilitre amount and chooses to Add or Remove it from the Daily Total. Custom is not a Preset.
 _Avoid_: manual entry, edit total, subtract button (as a separate control)
 
 **Follow**:

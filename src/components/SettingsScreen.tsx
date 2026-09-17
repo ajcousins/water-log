@@ -1,5 +1,12 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { type Settings, validateSettings } from '../domain'
+import {
+  MAX_PRESETS,
+  MAX_PRESET_LABEL_LENGTH,
+  seedNewPreset,
+  type Preset,
+  type Settings,
+  validateSettings,
+} from '../domain'
 import type { AccountSession, FollowState } from '../remote/types'
 
 type SettingsScreenProps = {
@@ -30,6 +37,15 @@ type SettingsScreenProps = {
   ) => Promise<{ ok: true } | { ok: false; error: string }>
 }
 
+type DraftPreset = { label: string; amount: string }
+
+function toDraftPresets(presets: readonly Preset[]): DraftPreset[] {
+  return presets.map((preset) => ({
+    label: preset.label,
+    amount: String(preset.amount),
+  }))
+}
+
 export function SettingsScreen({
   settings,
   onSave,
@@ -48,9 +64,10 @@ export function SettingsScreen({
   const [draft, setDraft] = useState({
     minimumTarget: String(settings.minimumTarget),
     maximumTarget: String(settings.maximumTarget),
-    small: String(settings.small),
-    large: String(settings.large),
   })
+  const [presets, setPresets] = useState<DraftPreset[]>(() =>
+    toDraftPresets(settings.presets),
+  )
   const [error, setError] = useState<string | null>(null)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -67,6 +84,9 @@ export function SettingsScreen({
     [session],
   )
 
+  const atPresetCap = presets.length >= MAX_PRESETS
+  const atPresetFloor = presets.length <= 1
+
   function parseField(value: string): number | null {
     if (!/^\d+$/.test(value.trim())) return null
     const amount = Number(value.trim())
@@ -77,20 +97,23 @@ export function SettingsScreen({
     event.preventDefault()
     const minimumTarget = parseField(draft.minimumTarget)
     const maximumTarget = parseField(draft.maximumTarget)
-    const small = parseField(draft.small)
-    const large = parseField(draft.large)
 
-    if (
-      minimumTarget === null ||
-      maximumTarget === null ||
-      small === null ||
-      large === null
-    ) {
-      setError('All values must be whole millilitres greater than 0')
+    if (minimumTarget === null || maximumTarget === null) {
+      setError('Targets must be whole millilitres greater than 0')
       return
     }
 
-    const next = { minimumTarget, maximumTarget, small, large }
+    const nextPresets: Preset[] = []
+    for (const preset of presets) {
+      const amount = parseField(preset.amount)
+      if (amount === null) {
+        setError('Preset amounts must be whole millilitres greater than 0')
+        return
+      }
+      nextPresets.push({ label: preset.label.trim(), amount })
+    }
+
+    const next = { minimumTarget, maximumTarget, presets: nextPresets }
     const validation = validateSettings(next)
     if (!validation.ok) {
       setError(validation.error)
@@ -152,8 +175,6 @@ export function SettingsScreen({
           [
             ['minimumTarget', 'Minimum Target (ml)'],
             ['maximumTarget', 'Maximum Target (ml)'],
-            ['small', 'Small (ml)'],
-            ['large', 'Large (ml)'],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="block text-sm text-[var(--ink-muted)]">
@@ -170,6 +191,127 @@ export function SettingsScreen({
             />
           </label>
         ))}
+
+        <div className="mt-2 flex flex-col gap-3">
+          <h2 className="font-[Fraunces,serif] text-2xl">Presets</h2>
+          {presets.map((preset, index) => (
+            <div
+              key={index}
+              className="flex flex-col gap-2 rounded-2xl border border-[var(--glass-edge)] bg-white/60 p-3"
+            >
+              <label className="block text-sm text-[var(--ink-muted)]">
+                Label
+                <input
+                  maxLength={MAX_PRESET_LABEL_LENGTH}
+                  value={preset.label}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    setPresets((current) =>
+                      current.map((item, i) =>
+                        i === index ? { ...item, label: value } : item,
+                      ),
+                    )
+                    setError(null)
+                  }}
+                  className="mt-1 w-full rounded-2xl border border-[var(--glass-edge)] bg-white/80 px-4 py-3 text-lg outline-none focus:border-[var(--pool)]"
+                />
+              </label>
+              <label className="block text-sm text-[var(--ink-muted)]">
+                Amount (ml)
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={preset.amount}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    setPresets((current) =>
+                      current.map((item, i) =>
+                        i === index ? { ...item, amount: value } : item,
+                      ),
+                    )
+                    setError(null)
+                  }}
+                  className="mt-1 w-full rounded-2xl border border-[var(--glass-edge)] bg-white/80 px-4 py-3 text-lg outline-none focus:border-[var(--pool)]"
+                />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={index === 0}
+                  aria-label={`Move preset ${index + 1} up`}
+                  onClick={() => {
+                    setPresets((current) => {
+                      if (index <= 0) return current
+                      const next = [...current]
+                      const tmp = next[index - 1]!
+                      next[index - 1] = next[index]!
+                      next[index] = tmp
+                      return next
+                    })
+                    setError(null)
+                  }}
+                  className="rounded-xl border border-[var(--glass-edge)] bg-white/80 px-3 py-2 text-sm font-semibold text-[var(--pool-deep)] disabled:opacity-30"
+                >
+                  Up
+                </button>
+                <button
+                  type="button"
+                  disabled={index === presets.length - 1}
+                  aria-label={`Move preset ${index + 1} down`}
+                  onClick={() => {
+                    setPresets((current) => {
+                      if (index >= current.length - 1) return current
+                      const next = [...current]
+                      const tmp = next[index + 1]!
+                      next[index + 1] = next[index]!
+                      next[index] = tmp
+                      return next
+                    })
+                    setError(null)
+                  }}
+                  className="rounded-xl border border-[var(--glass-edge)] bg-white/80 px-3 py-2 text-sm font-semibold text-[var(--pool-deep)] disabled:opacity-30"
+                >
+                  Down
+                </button>
+                <button
+                  type="button"
+                  disabled={atPresetFloor}
+                  aria-label={`Delete preset ${index + 1}`}
+                  onClick={() => {
+                    if (atPresetFloor) return
+                    setPresets((current) => current.filter((_, i) => i !== index))
+                    setError(null)
+                  }}
+                  className="rounded-xl border border-[var(--glass-edge)] bg-white/80 px-3 py-2 text-sm font-semibold text-[var(--over)] disabled:opacity-30"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            disabled={atPresetCap}
+            onClick={() => {
+              if (atPresetCap) return
+              const seeded = seedNewPreset(presets)
+              setPresets((current) => [
+                ...current,
+                { label: seeded.label, amount: String(seeded.amount) },
+              ])
+              setError(null)
+            }}
+            className="rounded-2xl border border-[var(--glass-edge)] bg-white/80 px-4 py-3 font-semibold text-[var(--pool-deep)] disabled:opacity-40"
+          >
+            Add Preset
+          </button>
+          {atPresetCap ? (
+            <p className="text-sm text-[var(--ink-muted)]">
+              Maximum of {MAX_PRESETS} Presets reached.
+            </p>
+          ) : null}
+        </div>
 
         {error ? <p className="text-sm text-[var(--over)]">{error}</p> : null}
 
