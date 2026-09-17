@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import {
   MAX_PRESETS,
   MAX_PRESET_LABEL_LENGTH,
+  movePreset,
   seedNewPreset,
   type Preset,
   type Settings,
@@ -240,14 +241,7 @@ export function SettingsScreen({
                   disabled={index === 0}
                   aria-label={`Move preset ${index + 1} up`}
                   onClick={() => {
-                    setPresets((current) => {
-                      if (index <= 0) return current
-                      const next = [...current]
-                      const tmp = next[index - 1]!
-                      next[index - 1] = next[index]!
-                      next[index] = tmp
-                      return next
-                    })
+                    setPresets((current) => movePreset(current, index, -1))
                     setError(null)
                   }}
                   className="rounded-xl border border-[var(--glass-edge)] bg-white/80 px-3 py-2 text-sm font-semibold text-[var(--pool-deep)] disabled:opacity-30"
@@ -259,14 +253,7 @@ export function SettingsScreen({
                   disabled={index === presets.length - 1}
                   aria-label={`Move preset ${index + 1} down`}
                   onClick={() => {
-                    setPresets((current) => {
-                      if (index >= current.length - 1) return current
-                      const next = [...current]
-                      const tmp = next[index + 1]!
-                      next[index + 1] = next[index]!
-                      next[index] = tmp
-                      return next
-                    })
+                    setPresets((current) => movePreset(current, index, 1))
                     setError(null)
                   }}
                   className="rounded-xl border border-[var(--glass-edge)] bg-white/80 px-3 py-2 text-sm font-semibold text-[var(--pool-deep)] disabled:opacity-30"

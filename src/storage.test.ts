@@ -104,6 +104,19 @@ describe('persistence', () => {
     })
   })
 
+  it('falls back to defaults when presets are corrupt', () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'water-log:settings',
+      JSON.stringify({
+        minimumTarget: 1500,
+        maximumTarget: 2500,
+        presets: [{ label: '  ', amount: 500 }],
+      }),
+    )
+    expect(loadSettings(storage)).toEqual(DEFAULT_SETTINGS)
+  })
+
   it('treats a missing Day as 0 ml', () => {
     expect(loadDailyTotal(memoryStorage(), '2026-07-30')).toBe(0)
   })

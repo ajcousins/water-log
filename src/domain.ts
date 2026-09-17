@@ -170,11 +170,11 @@ export function seedNewPreset(
   return { label: nextPresetLabel(existing), amount: NEW_PRESET_AMOUNT }
 }
 
-export function movePreset(
-  presets: readonly Preset[],
+export function movePreset<T>(
+  presets: readonly T[],
   index: number,
   direction: -1 | 1,
-): Preset[] {
+): T[] {
   const target = index + direction
   if (index < 0 || index >= presets.length) return [...presets]
   if (target < 0 || target >= presets.length) return [...presets]

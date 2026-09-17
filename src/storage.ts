@@ -1,6 +1,8 @@
 import {
   dailyTotalFromAdjustments,
   DEFAULT_SETTINGS,
+  MAX_PRESET_LABEL_LENGTH,
+  MAX_PRESETS,
   type Adjustment,
   type Preset,
   type Settings,
@@ -36,11 +38,17 @@ function cloneDefaultSettings(): Settings {
 
 function parsePresetList(value: unknown): Preset[] | null {
   if (!Array.isArray(value) || value.length === 0) return null
+  if (value.length > MAX_PRESETS) return null
   const presets: Preset[] = []
+  const seen = new Set<string>()
   for (const item of value) {
     if (!item || typeof item !== 'object') return null
     const record = item as { label?: unknown; amount?: unknown }
-    const label = typeof record.label === 'string' ? record.label : ''
+    if (typeof record.label !== 'string') return null
+    const label = record.label.trim()
+    if (label.length === 0 || label.length > MAX_PRESET_LABEL_LENGTH) return null
+    if (seen.has(label)) return null
+    seen.add(label)
     const amount = Number(record.amount)
     if (!Number.isInteger(amount) || amount <= 0) return null
     presets.push({ label, amount })

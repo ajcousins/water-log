@@ -87,7 +87,7 @@ export function MainScreen({
       </main>
 
       <footer className="-mx-5 mt-4 overflow-x-auto px-5">
-        <div className="flex w-max min-w-full items-center justify-center gap-5">
+        <div className="flex w-max min-w-full items-center justify-start gap-5">
           {settings.presets.map((preset) => (
             <FillButton
               key={preset.label}
